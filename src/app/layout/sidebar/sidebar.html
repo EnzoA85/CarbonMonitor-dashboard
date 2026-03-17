@@ -1,0 +1,83 @@
+<div class="w-64 bg-cap-dark h-full flex flex-col">
+
+  <!-- Logo / Brand -->
+  <div class="px-5 pt-7 pb-5">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 bg-cap-mid rounded-xl flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-cap-sage" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.955 11.955 0 003 10c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.249-8.25-3.286z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="text-[11px] font-extrabold tracking-[0.2em] text-cap-sage uppercase leading-tight">CAPCARBON</div>
+        <div class="text-[10px] text-cap-muted leading-tight mt-0.5">Pilotage carbone terrain</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="flex flex-col gap-0.5 flex-1 px-3">
+    <p class="text-[10px] text-cap-muted uppercase tracking-widest font-semibold mb-2 px-3">Navigation</p>
+
+    <a routerLink="/" routerLinkActive="cap-nav-active" [routerLinkActiveOptions]="{exact:true}"
+      class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-cap-muted hover:bg-cap-mid hover:text-white transition font-medium text-sm">
+      <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+      </svg>
+      Dashboard
+    </a>
+
+    <a routerLink="/sites" routerLinkActive="cap-nav-active"
+      class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-cap-muted hover:bg-cap-mid hover:text-white transition font-medium text-sm">
+      <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+      </svg>
+      Sites
+    </a>
+
+    <a routerLink="/compare" routerLinkActive="cap-nav-active"
+      class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-cap-muted hover:bg-cap-mid hover:text-white transition font-medium text-sm">
+      <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+      </svg>
+      Comparer
+    </a>
+
+    <a routerLink="/history" routerLinkActive="cap-nav-active"
+      class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-cap-muted hover:bg-cap-mid hover:text-white transition font-medium text-sm">
+      <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+      </svg>
+      Évolution
+    </a>
+
+    <a routerLink="/heatmap" routerLinkActive="cap-nav-active"
+      class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-cap-muted hover:bg-cap-mid hover:text-white transition font-medium text-sm">
+      <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+      </svg>
+      Heatmap
+    </a>
+
+    <div class="border-t border-cap-mid my-3"></div>
+
+    <a routerLink="/sites/new"
+      class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-cap-green hover:bg-cap-sage text-white transition font-medium text-sm">
+      <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Nouveau site
+    </a>
+  </nav>
+
+  <!-- Footer -->
+  <div class="px-5 pb-5 pt-3 border-t border-cap-mid">
+    <p class="text-[10px] text-cap-muted text-center tracking-wide">CapCarbon v1.0</p>
+  </div>
+
+</div>

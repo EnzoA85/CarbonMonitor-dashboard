@@ -1,0 +1,117 @@
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Comparaison de sites</h1>
+      <p class="text-gray-500 mt-1">Sélectionnez les sites à comparer</p>
+    </div>
+    <a routerLink="/sites"
+      class="text-sm text-gray-500 hover:text-gray-700 font-medium">
+      ← Retour aux sites
+    </a>
+  </div>
+
+  <!-- Sélecteur de sites -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+    <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Sites à comparer</h2>
+    <div class="flex flex-wrap gap-3">
+      @for (d of allSitesData; track d.site.id) {
+        <button (click)="toggleSite(d.site.id)"
+          class="px-4 py-2 rounded-xl font-medium text-sm border-2 transition"
+          [class]="isSelected(d.site.id)
+            ? 'bg-green-600 border-green-600 text-white'
+            : 'bg-white border-gray-200 text-gray-600 hover:border-green-400'">
+          {{ d.site.name }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (selectedSites.length >= 2) {
+
+    <!-- Tableau de comparaison par métrique -->
+    @for (metric of metrics; track metric.key) {
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-base font-semibold text-gray-700 mb-4">{{ metric.label }}</h3>
+        <div class="space-y-3">
+          @for (d of selectedSites; track d.site.id; let i = $index) {
+            <div>
+              <div class="flex justify-between text-sm mb-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full inline-block" [style.background]="barColors[i]"></span>
+                  <span class="font-medium text-gray-700">{{ d.site.name }}</span>
+                  @if (getBestForMetric(metric.key) === d.site.id) {
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">Meilleur</span>
+                  }
+                </div>
+                <span class="font-semibold text-gray-700">
+                  {{ metric.key === 'co2PerM2' ? (getMetricValue(d.carbon, metric.key) + ' kg/m²') : formatCO2(getMetricValue(d.carbon, metric.key)) }}
+                </span>
+              </div>
+              <div class="w-full bg-gray-100 rounded-full h-3">
+                <div class="h-3 rounded-full transition-all duration-500"
+                  [style.width.%]="getBarPct(d.carbon, metric.key)"
+                  [style.background]="barColors[i]">
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Tableau récap global -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div class="p-5 border-b border-gray-100">
+        <h2 class="text-base font-semibold text-gray-700">Vue d'ensemble comparative</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50">
+              <th class="px-4 py-3 text-left text-xs text-gray-500 font-semibold uppercase">Site</th>
+              <th class="px-4 py-3 text-right text-xs text-gray-500 font-semibold uppercase">CO₂ Total</th>
+              <th class="px-4 py-3 text-right text-xs text-gray-500 font-semibold uppercase">/ m²</th>
+              <th class="px-4 py-3 text-right text-xs text-gray-500 font-semibold uppercase">/ Employé</th>
+              <th class="px-4 py-3 text-right text-xs text-gray-500 font-semibold uppercase">Construction</th>
+              <th class="px-4 py-3 text-right text-xs text-gray-500 font-semibold uppercase">Exploitation</th>
+              <th class="px-4 py-3 text-right text-xs text-gray-500 font-semibold uppercase">Surface</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of selectedSites; track d.site.id; let i = $index) {
+              <tr class="border-t border-gray-50 hover:bg-gray-50 transition">
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full" [style.background]="barColors[i]"></span>
+                    <div>
+                      <div class="font-semibold text-gray-800">{{ d.site.name }}</div>
+                      <div class="text-xs text-gray-400">{{ d.site.location }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-right font-semibold text-gray-700">{{ formatCO2(d.carbon.co2Total) }}</td>
+                <td class="px-4 py-3 text-right text-gray-600">{{ d.carbon.co2PerM2 }} kg</td>
+                <td class="px-4 py-3 text-right text-gray-600">{{ formatCO2(d.carbon.co2PerEmployee) }}</td>
+                <td class="px-4 py-3 text-right text-amber-600">{{ formatCO2(d.carbon.co2Construction) }}</td>
+                <td class="px-4 py-3 text-right text-blue-600">{{ formatCO2(d.carbon.co2Exploitation) }}</td>
+                <td class="px-4 py-3 text-right text-gray-600">{{ d.site.surface | number }} m²</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  } @else {
+    <div class="flex flex-col items-center justify-center py-16 text-gray-400 bg-white rounded-2xl border border-gray-100">
+      <svg class="w-14 h-14 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+      </svg>
+      <p class="font-medium text-gray-500">Sélectionnez au moins 2 sites pour comparer</p>
+    </div>
+  }
+
+</div>
