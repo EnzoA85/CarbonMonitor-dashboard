@@ -4,6 +4,8 @@ import { Sites } from './features/sites/sites/sites';
 import { SiteForm } from './features/sites/site-form/site-form';
 import { SiteDetail } from './features/sites/site-detail/site-detail';
 import { Compare } from './features/compare/compare';
+import { History } from './features/history/history';
+import { Heatmap } from './features/heatmap/heatmap';
 
 export const routes: Routes = [
   {
@@ -25,6 +27,14 @@ export const routes: Routes = [
   {
     path: 'compare',
     component: Compare
+  },
+  {
+    path: 'history',
+    component: History
+  },
+  {
+    path: 'heatmap',
+    component: Heatmap
   },
   {
     path: '**',

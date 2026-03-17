@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { SiteService } from '../../../core/services/site';
+import { ExportService } from '../../../core/services/export';
 import { Site, CarbonResult } from '../../../core/models/site.model';
 
 @Component({
@@ -18,7 +19,8 @@ export class SiteDetail implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private siteService: SiteService
+    private siteService: SiteService,
+    private exportService: ExportService
   ) {}
 
   ngOnInit() {
@@ -26,6 +28,12 @@ export class SiteDetail implements OnInit {
     this.site = this.siteService.getSiteById(id);
     if (this.site) {
       this.carbon = this.siteService.calculateCarbon(this.site);
+    }
+  }
+
+  exportPDF() {
+    if (this.site && this.carbon) {
+      this.exportService.exportSitePDF(this.site, this.carbon);
     }
   }
 

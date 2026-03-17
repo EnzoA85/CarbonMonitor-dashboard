@@ -29,3 +29,20 @@ export interface CarbonResult {
     materials: number;
   };
 }
+
+export interface HistoricalEntry {
+  siteId: number;
+  month: string;      // 'YYYY-MM'
+  co2Total: number;
+  co2Energy: number;
+  co2Materials: number;
+  co2Parking: number;
+}
+
+export interface HeatmapCell {
+  siteId: number;
+  siteName: string;
+  category: string;
+  value: number;
+  intensity: number;  // 0 → 1 (normalisé par colonne)
+}
