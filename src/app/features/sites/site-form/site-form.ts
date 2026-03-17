@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, FormGroup, FormArray, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { SiteService } from '../../../core/services/site';
 import { CarbonResult, Site } from '../../../core/models/site.model';
@@ -12,11 +12,13 @@ import { CarbonResult, Site } from '../../../core/models/site.model';
   templateUrl: './site-form.html',
   styleUrl: './site-form.css'
 })
-export class SiteForm {
+export class SiteForm implements OnInit {
 
   form!: FormGroup;
   previewResult: CarbonResult | null = null;
   submitted = false;
+  isEditMode = false;
+  editingId: number | null = null;
 
   readonly materialOptions = [
     { label: 'Béton', co2PerTon: 210 },
@@ -31,7 +33,8 @@ export class SiteForm {
   constructor(
     private fb: FormBuilder,
     private siteService: SiteService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {
     this.form = this.fb.group({
       name: ['', Validators.required],
@@ -42,6 +45,32 @@ export class SiteForm {
       parkingSpaces: [0, [Validators.required, Validators.min(0)]],
       materials: this.fb.array([])
     });
+  }
+
+  ngOnInit() {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.isEditMode = true;
+      this.editingId = Number(id);
+      const site = this.siteService.getSiteById(this.editingId);
+      if (site) {
+        this.form.patchValue({
+          name: site.name,
+          location: site.location,
+          surface: site.surface,
+          employees: site.employees,
+          energyConsumption: site.energyConsumption,
+          parkingSpaces: site.parkingSpaces
+        });
+        site.materials.forEach(m => {
+          this.materialsArray.push(this.fb.group({
+            name: [m.name, Validators.required],
+            quantity: [m.quantity, [Validators.required, Validators.min(0)]],
+            co2PerTon: [m.co2PerTon, Validators.required]
+          }));
+        });
+      }
+    }
   }
 
   get materialsArray(): FormArray {
@@ -82,9 +111,14 @@ export class SiteForm {
 
   submit() {
     if (this.form.valid) {
-      const site: Omit<Site, 'id'> = { ...this.form.value, createdAt: new Date() };
-      const created = this.siteService.addSite(site);
-      this.router.navigate(['/sites', created.id]);
+      const data: Omit<Site, 'id'> = { ...this.form.value, createdAt: new Date() };
+      if (this.isEditMode && this.editingId !== null) {
+        this.siteService.updateSite(this.editingId, data);
+        this.router.navigate(['/sites', this.editingId]);
+      } else {
+        const created = this.siteService.addSite(data);
+        this.router.navigate(['/sites', created.id]);
+      }
     }
   }
 }

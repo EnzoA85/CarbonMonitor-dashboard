@@ -90,6 +90,17 @@ export class SiteService {
     return newSite;
   }
 
+  updateSite(id: number, data: Omit<Site, 'id'>): Site | undefined {
+    const idx = this.sites.findIndex(s => s.id === id);
+    if (idx === -1) return undefined;
+    this.sites[idx] = { ...data, id };
+    return this.sites[idx];
+  }
+
+  deleteSite(id: number): void {
+    this.sites = this.sites.filter(s => s.id !== id);
+  }
+
   calculateCarbon(site: Site): CarbonResult {
     // CO2 exploitation (énergie annuelle)
     const co2Energy = site.energyConsumption * ENERGY_FACTOR;
