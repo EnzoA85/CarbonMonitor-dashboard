@@ -18,6 +18,6 @@ export class App {
   readonly router = inject(Router);
 
   get isLoginPage(): boolean {
-    return this.router.url === '/login';
+    return this.router.url === '/login' || this.router.url === '/register';
   }
 }
