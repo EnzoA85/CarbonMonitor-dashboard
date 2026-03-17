@@ -3,21 +3,22 @@
   <!-- Header -->
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-2xl font-bold text-gray-800">Tableau de bord</h1>
-      <p class="text-gray-500 mt-1">Vue globale de l'empreinte carbone de vos sites</p>
+      <p class="text-[10px] font-bold text-cap-muted uppercase tracking-widest mb-0.5">ACCUEIL</p>
+      <h1 class="text-2xl font-bold text-cap-dark">Tableau de bord carbone</h1>
+      <p class="text-gray-500 mt-1">Vue d'évolution des KPI, répartition construction/exploitation et dernier diagnostic.</p>
     </div>
     <a routerLink="/sites/new"
-      class="bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm">
+      class="bg-cap-dark hover:bg-cap-mid text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm">
       + Nouveau site
     </a>
   </div>
 
   <!-- KPIs -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-      <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">CO₂ Total</div>
-      <div class="text-3xl font-bold text-green-600">{{ formatCO2(totalCO2) }}</div>
-      <div class="text-xs text-gray-400 mt-1">Tous sites confondus</div>
+    <div class="bg-cap-dark rounded-2xl p-5">
+      <div class="text-xs font-semibold text-cap-muted uppercase tracking-wide mb-2">CO₂ Total</div>
+      <div class="text-3xl font-bold text-white">{{ formatCO2(totalCO2) }}</div>
+      <div class="text-xs text-cap-muted mt-1">Tous sites confondus</div>
     </div>
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
       <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">CO₂ / m²</div>
@@ -41,7 +42,7 @@
 
     <!-- Graphique en barres : CO2 par site -->
     <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-      <h2 class="text-base font-semibold text-gray-700 mb-5">Émissions CO₂ par site</h2>
+      <h2 class="text-base font-semibold text-cap-dark mb-5">Émissions CO₂ par site</h2>
       <div class="space-y-4">
         @for (bar of barChartData; track bar.label) {
           <div>
@@ -49,7 +50,7 @@
               <span class="font-medium text-gray-600 truncate max-w-[60%]">{{ bar.label }}</span>
               <span class="text-gray-500 text-xs">{{ formatCO2(bar.value) }}</span>
             </div>
-            <div class="w-full bg-gray-100 rounded-full h-3">
+            <div class="w-full bg-cap-sand rounded-full h-3">
               <div class="h-3 rounded-full transition-all duration-500"
                 [style.width.%]="bar.pct"
                 [style.background]="bar.color">
@@ -62,7 +63,7 @@
 
     <!-- Donut : Construction vs Exploitation -->
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col items-center justify-center">
-      <h2 class="text-base font-semibold text-gray-700 mb-4 self-start">Répartition des émissions</h2>
+      <h2 class="text-base font-semibold text-cap-dark mb-4 self-start">Répartition des émissions</h2>
       <div class="relative w-36 h-36">
         <svg viewBox="0 0 120 120" class="w-full h-full -rotate-90">
           <circle cx="60" cy="60" r="54" fill="none" stroke="#e5e7eb" stroke-width="12"/>
@@ -76,7 +77,7 @@
             stroke-linecap="round"/>
         </svg>
         <div class="absolute inset-0 flex items-center justify-center flex-col">
-          <span class="text-xl font-bold text-gray-700">{{ donutConstruction }}%</span>
+          <span class="text-xl font-bold text-cap-dark">{{ donutConstruction }}%</span>
           <span class="text-xs text-gray-400">constr.</span>
         </div>
       </div>
@@ -101,23 +102,23 @@
 
     <!-- Meilleur site -->
     @if (getBestSite(); as best) {
-      <div class="bg-gradient-to-br from-green-50 to-emerald-100 rounded-2xl border border-green-200 p-6 flex flex-col justify-between">
+      <div class="bg-cap-light rounded-2xl border border-cap-sand p-6 flex flex-col justify-between">
         <div>
-          <div class="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">🏆 Site le plus sobre</div>
-          <div class="text-xl font-bold text-green-800">{{ best.site.name }}</div>
-          <div class="text-sm text-green-600 mt-1">{{ best.site.location }}</div>
+          <div class="text-xs font-semibold text-cap-green uppercase tracking-wide mb-2">🏆 Site le plus sobre</div>
+          <div class="text-xl font-bold text-cap-dark">{{ best.site.name }}</div>
+          <div class="text-sm text-cap-green mt-1">{{ best.site.location }}</div>
         </div>
         <div class="mt-4 grid grid-cols-2 gap-3">
           <div>
-            <div class="text-lg font-bold text-green-700">{{ best.carbon.co2PerM2 }} kg/m²</div>
-            <div class="text-xs text-green-600">CO₂ par m²</div>
+            <div class="text-lg font-bold text-cap-dark">{{ best.carbon.co2PerM2 }} kg/m²</div>
+            <div class="text-xs text-cap-green">CO₂ par m²</div>
           </div>
           <div>
-            <div class="text-lg font-bold text-green-700">{{ formatCO2(best.carbon.co2PerEmployee) }}</div>
-            <div class="text-xs text-green-600">Par employé</div>
+            <div class="text-lg font-bold text-cap-dark">{{ formatCO2(best.carbon.co2PerEmployee) }}</div>
+            <div class="text-xs text-cap-green">Par employé</div>
           </div>
         </div>
-        <a [routerLink]="['/sites', best.site.id]" class="mt-4 text-green-700 hover:text-green-900 text-sm font-medium">
+        <a [routerLink]="['/sites', best.site.id]" class="mt-4 text-cap-green hover:text-cap-dark text-sm font-medium">
           Voir le détail →
         </a>
       </div>
@@ -125,33 +126,33 @@
 
     <!-- Tableau des sites -->
     <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      <div class="p-4 border-b border-gray-100 flex justify-between items-center">
-        <h2 class="text-base font-semibold text-gray-700">Tous les sites</h2>
-        <a routerLink="/compare" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Comparer →</a>
+      <div class="p-4 border-b border-cap-sand flex justify-between items-center">
+        <h2 class="text-base font-semibold text-cap-dark">Tous les sites</h2>
+        <a routerLink="/compare" class="text-sm text-cap-green hover:text-cap-dark font-medium">Comparer →</a>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
-            <tr class="bg-gray-50 text-left">
-              <th class="px-4 py-3 text-xs text-gray-500 font-semibold uppercase">Site</th>
-              <th class="px-4 py-3 text-xs text-gray-500 font-semibold uppercase">CO₂ Total</th>
-              <th class="px-4 py-3 text-xs text-gray-500 font-semibold uppercase">/ m²</th>
-              <th class="px-4 py-3 text-xs text-gray-500 font-semibold uppercase">/ Employé</th>
+            <tr class="bg-cap-cream text-left">
+              <th class="px-4 py-3 text-xs text-cap-muted font-semibold uppercase">Site</th>
+              <th class="px-4 py-3 text-xs text-cap-muted font-semibold uppercase">CO₂ Total</th>
+              <th class="px-4 py-3 text-xs text-cap-muted font-semibold uppercase">/ m²</th>
+              <th class="px-4 py-3 text-xs text-cap-muted font-semibold uppercase">/ Employé</th>
               <th class="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
             @for (d of sitesData; track d.site.id) {
-              <tr class="border-t border-gray-50 hover:bg-gray-50 transition">
+              <tr class="border-t border-cap-sand hover:bg-cap-cream transition">
                 <td class="px-4 py-3">
-                  <div class="font-medium text-gray-800">{{ d.site.name }}</div>
+                  <div class="font-medium text-cap-dark">{{ d.site.name }}</div>
                   <div class="text-xs text-gray-400">{{ d.site.location }}</div>
                 </td>
-                <td class="px-4 py-3 font-semibold text-gray-700">{{ formatCO2(d.carbon.co2Total) }}</td>
+                <td class="px-4 py-3 font-semibold text-cap-dark">{{ formatCO2(d.carbon.co2Total) }}</td>
                 <td class="px-4 py-3 text-gray-600">{{ d.carbon.co2PerM2 }} kg</td>
                 <td class="px-4 py-3 text-gray-600">{{ formatCO2(d.carbon.co2PerEmployee) }}</td>
                 <td class="px-4 py-3">
-                  <a [routerLink]="['/sites', d.site.id]" class="text-blue-600 hover:text-blue-800 font-medium">Voir</a>
+                  <a [routerLink]="['/sites', d.site.id]" class="text-cap-green hover:text-cap-dark font-medium">Voir</a>
                 </td>
               </tr>
             }
