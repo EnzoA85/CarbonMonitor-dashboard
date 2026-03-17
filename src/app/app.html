@@ -1,15 +1,19 @@
-<div class="flex h-screen">
+@if (isLoginPage) {
+  <router-outlet></router-outlet>
+} @else {
+  <div class="flex h-screen">
 
-  <app-sidebar></app-sidebar>
+    <app-sidebar></app-sidebar>
 
-  <div class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col">
 
-    <app-header></app-header>
+      <app-header></app-header>
 
-    <main class="p-6 bg-gray-100 flex-1 overflow-auto">
-      <router-outlet></router-outlet>
-    </main>
+      <main class="p-6 bg-gray-100 flex-1 overflow-auto">
+        <router-outlet></router-outlet>
+      </main>
+
+    </div>
 
   </div>
-
-</div>
+}
