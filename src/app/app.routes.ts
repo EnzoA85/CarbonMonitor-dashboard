@@ -6,6 +6,8 @@ import { SiteDetail } from './features/sites/site-detail/site-detail';
 import { Compare } from './features/compare/compare';
 import { Login } from './features/auth/login/login';
 import { authGuard } from './core/guards/auth.guard';
+import { History } from './features/history/history';
+import { Heatmap } from './features/heatmap/heatmap';
 
 export const routes: Routes = [
   {
@@ -36,6 +38,14 @@ export const routes: Routes = [
     path: 'compare',
     canActivate: [authGuard],
     component: Compare
+  },
+  {
+    path: 'history',
+    component: History
+  },
+  {
+    path: 'heatmap',
+    component: Heatmap
   },
   {
     path: '**',

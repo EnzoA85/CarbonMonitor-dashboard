@@ -1,0 +1,142 @@
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Heatmap des émissions</h1>
+      <p class="text-gray-500 mt-1 text-sm">Intensité CO₂ par site et par catégorie — du vert (faible) au rouge (élevé)</p>
+    </div>
+    <a routerLink="/" class="text-sm text-gray-400 hover:text-gray-600">← Dashboard</a>
+  </div>
+
+  <!-- Légende de couleur -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+    <div class="flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide mr-2">Intensité :</span>
+      <div class="flex items-center gap-1">
+        <div class="w-24 h-4 rounded-full" [style.background]="legendGradient">
+        </div>
+        <span class="text-xs text-gray-400 ml-1">Faible → Élevé</span>
+      </div>
+      <div class="flex gap-3 ml-4">
+        <div class="flex items-center gap-1.5">
+          <span class="w-4 h-4 rounded" style="background: hsl(120,70%,90%)"></span>
+          <span class="text-xs text-gray-500">Très faible</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-4 h-4 rounded" style="background: hsl(80,70%,80%)"></span>
+          <span class="text-xs text-gray-500">Faible</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-4 h-4 rounded" style="background: hsl(50,70%,72%)"></span>
+          <span class="text-xs text-gray-500">Moyen</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-4 h-4 rounded" style="background: hsl(20,70%,66%)"></span>
+          <span class="text-xs text-gray-500">Élevé</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-4 h-4 rounded" style="background: hsl(0,70%,60%)"></span>
+          <span class="text-xs text-gray-500">Très élevé</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Heatmap principale -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse" style="min-width: 700px;">
+
+        <!-- En-tête des catégories -->
+        <thead>
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase bg-gray-50 border-b border-gray-100 sticky left-0 z-10">
+              Site
+            </th>
+            @for (cat of categories; track cat) {
+              <th class="px-3 py-3 text-center text-xs font-semibold text-gray-500 uppercase bg-gray-50 border-b border-gray-100 whitespace-nowrap">
+                {{ cat }}
+              </th>
+            }
+          </tr>
+        </thead>
+
+        <!-- Lignes par site -->
+        <tbody>
+          @for (row of rows; track row[0].siteId) {
+            <tr class="group border-b border-gray-50">
+              <!-- Nom du site -->
+              <td class="px-4 py-3 font-semibold text-gray-700 text-sm bg-white sticky left-0 z-10 border-r border-gray-100 group-hover:bg-gray-50 transition">
+                <a [routerLink]="['/sites', row[0].siteId]"
+                  class="hover:text-green-600 transition line-clamp-1">
+                  {{ row[0].siteName }}
+                </a>
+              </td>
+              <!-- Cellules -->
+              @for (cell of row; track cell.category) {
+                <td class="p-1">
+                  <div
+                    class="rounded-xl px-3 py-3 text-center cursor-pointer transition hover:scale-105 hover:shadow-sm"
+                    [style.background]="getCellColor(cell.intensity)"
+                    [style.color]="getTextColor(cell.intensity)"
+                    (mouseenter)="showTooltip(cell, $event)"
+                    (mouseleave)="hideTooltip()">
+                    <div class="text-xs font-bold leading-tight">{{ formatCO2(cell.value) }}</div>
+                    <div class="text-xs opacity-70 mt-0.5">{{ getIntensityLabel(cell.intensity) }}</div>
+                  </div>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+
+      </table>
+    </div>
+  </div>
+
+  <!-- Analyse textuelle automatique -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+    <div class="bg-red-50 border border-red-200 rounded-2xl p-5">
+      <div class="text-xs font-semibold text-red-500 uppercase tracking-wide mb-2">⚠ Zone critique</div>
+      @if (rows.length > 0) {
+        @let worst = rows.reduce((a, b) => a[0].value > b[0].value ? a : b);
+        <div class="font-bold text-red-800">{{ worst[0].siteName }}</div>
+        <p class="text-sm text-red-600 mt-1">CO₂ total le plus élevé : {{ formatCO2(worst[0].value) }}</p>
+      }
+    </div>
+
+    <div class="bg-green-50 border border-green-200 rounded-2xl p-5">
+      <div class="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">✓ Meilleure performance</div>
+      @if (rows.length > 0) {
+        @let best = rows.reduce((a, b) => a[0].value < b[0].value ? a : b);
+        <div class="font-bold text-green-800">{{ best[0].siteName }}</div>
+        <p class="text-sm text-green-600 mt-1">CO₂ total le plus faible : {{ formatCO2(best[0].value) }}</p>
+      }
+    </div>
+
+    <div class="bg-blue-50 border border-blue-200 rounded-2xl p-5">
+      <div class="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">📊 Lecture rapide</div>
+      <p class="text-sm text-blue-700">
+        Chaque cellule indique l'intensité relative par rapport au site le plus émetteur dans cette catégorie.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- Tooltip -->
+  @if (tooltip.visible && tooltip.cell) {
+    <div class="fixed z-50 bg-gray-900 text-white text-xs rounded-xl px-4 py-3 shadow-xl pointer-events-none"
+      [style.left.px]="tooltip.x + 14"
+      [style.top.px]="tooltip.y - 14">
+      <div class="font-bold text-white mb-1">{{ tooltip.cell.siteName }}</div>
+      <div class="text-gray-300 mb-1">{{ tooltip.cell.category }}</div>
+      <div class="font-bold text-green-300">{{ formatCO2(tooltip.cell.value) }}</div>
+      <div class="text-gray-400 mt-1">Intensité : {{ getIntensityLabel(tooltip.cell.intensity) }}
+        ({{ (tooltip.cell.intensity * 100) | number:'1.0-0' }}%)
+      </div>
+    </div>
+  }
+
+</div>
