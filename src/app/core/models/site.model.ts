@@ -32,7 +32,7 @@ export interface CarbonResult {
 
 export interface HistoricalEntry {
   siteId: number;
-  month: string;      // 'YYYY-MM'
+  month: string;      // 'YYYY' ou 'YYYY-MM'
   co2Total: number;
   co2Energy: number;
   co2Materials: number;
@@ -45,4 +45,60 @@ export interface HeatmapCell {
   category: string;
   value: number;
   intensity: number;  // 0 → 1 (normalisé par colonne)
+}
+
+// ── Types réponse API ────────────────────────────────────────────
+
+export interface SiteResponse {
+  id: number;
+  name: string;
+  location: string;
+  surface: number;
+  parkingSpaces: number;
+  employees: number;
+  energyConsumption: number;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface MaterialResponse {
+  id: number;
+  name: string;
+  emissionFactor: number;
+  unit: string;
+}
+
+export interface SiteMaterialResponse {
+  id: number;
+  siteId: number;
+  material: MaterialResponse;
+  quantity: number;
+  calculatedEmission: number;
+}
+
+export interface SiteHistoryResponse {
+  id: number;
+  siteId: number;
+  year: number;
+  energyConsumption: number;
+  employees: number;
+  totalEmission: number;
+}
+
+export interface CarbonResultResponse {
+  id: number;
+  siteId: number;
+  constructionEmission: number;
+  exploitationEmission: number;
+  totalEmission: number;
+  co2PerM2: number;
+  co2PerEmployee: number;
+  calculatedAt: string;
+}
+
+export interface DashboardKpiResponse {
+  totalSites: number;
+  totalCarbonFootprint: number;
+  averageCo2PerM2: number;
+  averageCo2PerEmployee: number;
 }

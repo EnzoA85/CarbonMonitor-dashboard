@@ -1,13 +1,17 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, finalize, of } from 'rxjs';
 import { SiteService } from '../../core/services/site';
 import { Site, CarbonResult } from '../../core/models/site.model';
 
 interface SiteWithCarbon {
   site: Site;
-  carbon: CarbonResult;
+  carbon?: CarbonResult;
+  loading: boolean;
+  error?: boolean;
 }
 
 @Component({
@@ -22,6 +26,11 @@ export class Compare implements OnInit {
   allSitesData: SiteWithCarbon[] = [];
   selectedIds: number[] = [];
   selectedSites: SiteWithCarbon[] = [];
+  
+  loading = true;
+  error = false;
+
+  private destroyRef = inject(DestroyRef);
 
   readonly metrics = [
     { key: 'co2Total', label: 'CO₂ Total', unit: '', color: '#22c55e' },
@@ -36,14 +45,51 @@ export class Compare implements OnInit {
   constructor(private siteService: SiteService) {}
 
   ngOnInit() {
-    const sites = this.siteService.getSites();
-    this.allSitesData = sites.map(site => ({
-      site,
-      carbon: this.siteService.calculateCarbon(site)
-    }));
-    // Sélectionner les 2 premiers par défaut
-    this.selectedIds = this.allSitesData.slice(0, 2).map(d => d.site.id);
-    this.updateSelection();
+    this.loading = true;
+    this.error = false;
+
+    // 1. Charger la liste des sites
+    this.siteService.getSites().pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.loading = false)
+    ).subscribe({
+      next: (sites) => {
+        this.allSitesData = sites.map(site => ({
+          site,
+          loading: true
+        }));
+
+        // Sélectionner les 2 premiers par défaut
+        if (sites.length >= 2) {
+          this.selectedIds = sites.slice(0, 2).map(s => s.id);
+        }
+        this.updateSelection();
+
+        // 2. Charger les données carbone pour chaque site individuellement
+        this.allSitesData.forEach(item => {
+          this.siteService.calculateCarbon(item.site.id).pipe(
+            takeUntilDestroyed(this.destroyRef),
+            catchError(() => {
+              item.error = true;
+              return of(item.carbon); // Return existing (undefined) or null
+            }),
+            finalize(() => {
+              item.loading = false;
+              this.updateSelection();
+            })
+          ).subscribe(carbon => {
+            if (carbon) {
+              item.carbon = carbon;
+              this.updateSelection();
+            }
+          });
+        });
+      },
+      error: (err) => {
+        this.error = true;
+        console.error('Failed to load sites list', err);
+      }
+    });
   }
 
   toggleSite(id: number) {
@@ -64,8 +110,9 @@ export class Compare implements OnInit {
     this.selectedSites = this.allSitesData.filter(d => this.selectedIds.includes(d.site.id));
   }
 
-  getMetricValue(carbon: CarbonResult, key: string): number {
-    return (carbon as any)[key] as number;
+  getMetricValue(carbon: CarbonResult | undefined, key: string): number {
+    if (!carbon) return 0;
+    return (carbon as any)[key] as number || 0;
   }
 
   getMaxForMetric(key: string): number {
@@ -73,7 +120,8 @@ export class Compare implements OnInit {
     return Math.max(...values) || 1;
   }
 
-  getBarPct(carbon: CarbonResult, key: string): number {
+  getBarPct(carbon: CarbonResult | undefined, key: string): number {
+    if (!carbon) return 0;
     const max = this.getMaxForMetric(key);
     return Math.round((this.getMetricValue(carbon, key) / max) * 100);
   }
@@ -85,10 +133,13 @@ export class Compare implements OnInit {
   }
 
   getBestForMetric(key: string): number {
-    if (!this.selectedSites.length) return 0;
-    return this.selectedSites.reduce((best, d) => {
+    const valid = this.selectedSites.filter(d => d.carbon);
+    if (!valid.length) return 0;
+    
+    return valid.reduce((best, d) => {
       const val = this.getMetricValue(d.carbon, key);
-      return val < this.getMetricValue(best.carbon, key) ? d : best;
+      const bestVal = this.getMetricValue(best.carbon, key);
+      return val < bestVal ? d : best;
     }).site.id;
   }
 }

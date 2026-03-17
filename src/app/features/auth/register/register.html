@@ -17,10 +17,10 @@
     <!-- Card -->
     <div class="bg-white rounded-3xl shadow-2xl p-8">
 
-      <h2 class="text-xl font-bold text-gray-800 mb-1">Connexion</h2>
-      <p class="text-gray-400 text-sm mb-6">Bienvenue ! Veuillez vous identifier.</p>
+      <h2 class="text-xl font-bold text-gray-800 mb-1">Créer un compte</h2>
+      <p class="text-gray-400 text-sm mb-6">Renseignez vos informations pour commencer.</p>
 
-      <!-- Message d'erreur -->
+      <!-- Erreur -->
       @if (error) {
         <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-5 text-sm flex items-center gap-2">
           <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -43,16 +43,18 @@
                   d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/>
               </svg>
             </span>
-            <input type="email" formControlName="email"
-              placeholder="vous@company.com"
+            <input type="email" formControlName="email" placeholder="vous@example.com"
               class="w-full border border-gray-200 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 transition"
               [class.border-red-300]="form.get('email')?.invalid && form.get('email')?.touched" />
           </div>
+          @if (form.get('email')?.invalid && form.get('email')?.touched) {
+            <span class="text-xs text-red-500">Adresse e-mail invalide.</span>
+          }
         </div>
 
         <!-- Mot de passe -->
         <div class="flex flex-col gap-1.5">
-          <label class="text-sm font-medium text-gray-600">Mot de passe</label>
+          <label class="text-sm font-medium text-gray-600">Mot de passe <span class="text-gray-400 font-normal">(min. 6 caractères)</span></label>
           <div class="relative">
             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,14 +75,51 @@
                 </svg>
               } @else {
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                 </svg>
               }
             </button>
           </div>
+          @if (form.get('password')?.invalid && form.get('password')?.touched) {
+            <span class="text-xs text-red-500">Le mot de passe doit contenir au moins 6 caractères.</span>
+          }
+        </div>
+
+        <!-- Confirmer mot de passe -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-sm font-medium text-gray-600">Confirmer le mot de passe</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+            </span>
+            <input [type]="showConfirmPassword ? 'text' : 'password'" formControlName="confirmPassword"
+              placeholder="••••••••"
+              class="w-full border border-gray-200 rounded-xl py-3 pl-10 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 transition"
+              [class.border-red-300]="form.hasError('mismatch') && form.get('confirmPassword')?.touched" />
+            <button type="button" (click)="showConfirmPassword = !showConfirmPassword"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition">
+              @if (showConfirmPassword) {
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                </svg>
+              } @else {
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+              }
+            </button>
+          </div>
+          @if (form.hasError('mismatch') && form.get('confirmPassword')?.touched) {
+            <span class="text-xs text-red-500">Les mots de passe ne correspondent pas.</span>
+          }
         </div>
 
         <!-- Bouton -->
@@ -91,19 +130,19 @@
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
             </svg>
-            Connexion en cours…
+            Création en cours…
           } @else {
-            Se connecter
+            Créer mon compte
           }
         </button>
 
       </form>
 
-      <!-- Lien inscription -->
-      <div class="mt-4 pt-4 border-t border-gray-100 text-center">
+      <!-- Lien vers login -->
+      <div class="mt-6 pt-5 border-t border-gray-100 text-center">
         <p class="text-sm text-gray-500">
-          Pas encore de compte ?
-          <a routerLink="/register" class="text-green-600 hover:text-green-700 font-semibold transition">Créer un compte</a>
+          Déjà un compte ?
+          <a routerLink="/login" class="text-green-600 hover:text-green-700 font-semibold transition">Se connecter</a>
         </p>
       </div>
 

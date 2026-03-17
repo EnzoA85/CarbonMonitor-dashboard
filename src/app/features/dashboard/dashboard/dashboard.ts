@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { forkJoin, catchError, of } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SiteService } from '../../../core/services/site';
-import { Site, CarbonResult } from '../../../core/models/site.model';
+import { Site, CarbonResult, DashboardKpiResponse } from '../../../core/models/site.model';
 
 interface SiteWithCarbon {
   site: Site;
@@ -19,17 +21,16 @@ interface SiteWithCarbon {
 export class Dashboard implements OnInit {
 
   sitesData: SiteWithCarbon[] = [];
+  loading = true;
 
   totalCO2 = 0;
   avgCO2PerM2 = 0;
   avgCO2PerEmployee = 0;
   totalSites = 0;
 
-  // Pour le graphique en barres
   barChartData: { label: string; value: number; pct: number; color: string }[] = [];
   readonly barColors = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-  // Pour le donut construction vs exploitation
   donutConstruction = 0;
   donutExploitation = 0;
   donutCircumference = 2 * Math.PI * 54;
@@ -37,32 +38,57 @@ export class Dashboard implements OnInit {
   constructor(private siteService: SiteService) {}
 
   ngOnInit() {
-    const sites = this.siteService.getSites();
-    this.sitesData = sites.map(site => ({
-      site,
-      carbon: this.siteService.calculateCarbon(site)
-    }));
+    const destroyRef = inject(DestroyRef);
 
-    this.totalSites = sites.length;
-    this.totalCO2 = this.sitesData.reduce((s, d) => s + d.carbon.co2Total, 0);
-    this.avgCO2PerM2 = +(this.sitesData.reduce((s, d) => s + d.carbon.co2PerM2, 0) / this.totalSites).toFixed(1);
-    this.avgCO2PerEmployee = Math.round(this.sitesData.reduce((s, d) => s + d.carbon.co2PerEmployee, 0) / this.totalSites);
+    // KPIs : chargement indépendant
+    this.siteService.getDashboardKpis().pipe(
+      takeUntilDestroyed(destroyRef),
+      catchError(() => of(null))
+    ).subscribe(kpis => {
+      if (kpis) {
+        this.totalSites        = kpis.totalSites;
+        this.totalCO2          = Math.round(kpis.totalCarbonFootprint);
+        this.avgCO2PerM2       = +kpis.averageCo2PerM2.toFixed(1);
+        this.avgCO2PerEmployee = Math.round(kpis.averageCo2PerEmployee);
+      }
+    });
 
-    // Graphique en barres (CO2 par site)
-    const maxCO2 = Math.max(...this.sitesData.map(d => d.carbon.co2Total));
-    this.barChartData = this.sitesData.map((d, i) => ({
-      label: d.site.name,
-      value: d.carbon.co2Total,
-      pct: Math.round((d.carbon.co2Total / maxCO2) * 100),
-      color: this.barColors[i % this.barColors.length]
-    }));
+    // Sites + carbone : chargement en deux phases
+    this.siteService.getSites().pipe(
+      takeUntilDestroyed(destroyRef),
+      catchError(() => of([]))
+    ).subscribe(sites => {
+      this.loading = false;
+      if (!sites.length) return;
 
-    // Donut construction vs exploitation
-    const totalConst = this.sitesData.reduce((s, d) => s + d.carbon.co2Construction, 0);
-    const totalExpl = this.sitesData.reduce((s, d) => s + d.carbon.co2Exploitation, 0);
-    const totalAll = totalConst + totalExpl;
-    this.donutConstruction = totalAll > 0 ? Math.round((totalConst / totalAll) * 100) : 0;
-    this.donutExploitation = 100 - this.donutConstruction;
+      const entries: SiteWithCarbon[] = [];
+      let pending = sites.length;
+
+      sites.forEach(site => {
+        this.siteService.calculateCarbonForSite(site).pipe(
+          takeUntilDestroyed(destroyRef),
+          catchError(() => of(null))
+        ).subscribe(carbon => {
+          if (carbon) entries.push({ site, carbon });
+          pending--;
+          if (pending === 0) {
+            this.sitesData = entries;
+            const maxCO2 = Math.max(...entries.map(d => d.carbon.co2Total), 1);
+            this.barChartData = entries.map((d, i) => ({
+              label: d.site.name,
+              value: d.carbon.co2Total,
+              pct:   Math.round((d.carbon.co2Total / maxCO2) * 100),
+              color: this.barColors[i % this.barColors.length]
+            }));
+            const totalConst = entries.reduce((s, d) => s + d.carbon.co2Construction, 0);
+            const totalExpl  = entries.reduce((s, d) => s + d.carbon.co2Exploitation, 0);
+            const totalAll   = totalConst + totalExpl;
+            this.donutConstruction = totalAll > 0 ? Math.round((totalConst / totalAll) * 100) : 0;
+            this.donutExploitation = 100 - this.donutConstruction;
+          }
+        });
+      });
+    });
   }
 
   formatCO2(value: number): string {

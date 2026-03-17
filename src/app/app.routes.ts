@@ -5,6 +5,7 @@ import { SiteForm } from './features/sites/site-form/site-form';
 import { SiteDetail } from './features/sites/site-detail/site-detail';
 import { Compare } from './features/compare/compare';
 import { Login } from './features/auth/login/login';
+import { Register } from './features/auth/register/register';
 import { authGuard } from './core/guards/auth.guard';
 import { History } from './features/history/history';
 import { Heatmap } from './features/heatmap/heatmap';
@@ -13,6 +14,10 @@ export const routes: Routes = [
   {
     path: 'login',
     component: Login
+  },
+  {
+    path: 'register',
+    component: Register
   },
   {
     path: '',

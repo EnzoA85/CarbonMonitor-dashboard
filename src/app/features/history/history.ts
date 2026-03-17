@@ -45,19 +45,35 @@ export class History implements OnInit {
   readonly innerW  = CHART_W - PAD.left - PAD.right;
   readonly innerH  = CHART_H;
 
+  historyMap: Map<number, HistoricalEntry[]> = new Map();
+
   constructor(private siteService: SiteService) {}
 
   ngOnInit() {
-    this.sites = this.siteService.getSites();
-    this.selectedIds = this.sites.slice(0, 2).map(s => s.id);
-    this.rebuild();
+    this.siteService.getSites().subscribe(sites => {
+      this.sites = sites;
+      this.selectedIds = sites.slice(0, 2).map(s => s.id);
+      this.loadHistoryAndRebuild();
+    });
+  }
+
+  private loadHistoryAndRebuild() {
+    this.siteService.getHistoryForSites(this.selectedIds).subscribe(map => {
+      this.historyMap = map;
+      this.rebuild();
+    });
   }
 
   toggleSite(id: number) {
-    this.selectedIds = this.selectedIds.includes(id)
+    const wasSelected = this.selectedIds.includes(id);
+    this.selectedIds = wasSelected
       ? this.selectedIds.filter(i => i !== id)
       : [...this.selectedIds, id];
-    this.rebuild();
+    if (!wasSelected && !this.historyMap.has(id)) {
+      this.loadHistoryAndRebuild();
+    } else {
+      this.rebuild();
+    }
   }
 
   isSelected(id: number): boolean { return this.selectedIds.includes(id); }
@@ -68,10 +84,9 @@ export class History implements OnInit {
   rebuild() {
     if (!this.selectedIds.length) { this.series = []; return; }
 
-    // Récupérer toutes les entrées pour les sites sélectionnés, filtrées par année
     const allEntries: Map<number, HistoricalEntry[]> = new Map();
     for (const id of this.selectedIds) {
-      let history = this.siteService.getHistory(id);
+      let history = this.historyMap.get(id) ?? [];
       if (this.selectedYear !== 'all') {
         history = history.filter(e => e.month.startsWith(this.selectedYear));
       }

@@ -17,12 +17,22 @@
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600">Nom du site *</label>
           <input type="text" formControlName="name" placeholder="Ex: Siège Social Paris"
-            class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
+            class="border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition"
+            [class.border-red-400]="submitted && form.get('name')?.invalid"
+            [class.border-gray-200]="!(submitted && form.get('name')?.invalid)" />
+          @if (submitted && form.get('name')?.invalid) {
+            <span class="text-xs text-red-500">Le nom est requis.</span>
+          }
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600">Localisation *</label>
           <input type="text" formControlName="location" placeholder="Ex: Paris, Île-de-France"
-            class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
+            class="border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition"
+            [class.border-red-400]="submitted && form.get('location')?.invalid"
+            [class.border-gray-200]="!(submitted && form.get('location')?.invalid)" />
+          @if (submitted && form.get('location')?.invalid) {
+            <span class="text-xs text-red-500">La localisation est requise.</span>
+          }
         </div>
       </div>
     </div>
@@ -37,12 +47,22 @@
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600">Surface (m²) *</label>
           <input type="number" formControlName="surface" min="1"
-            class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
+            class="border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition"
+            [class.border-red-400]="submitted && form.get('surface')?.invalid"
+            [class.border-gray-200]="!(submitted && form.get('surface')?.invalid)" />
+          @if (submitted && form.get('surface')?.invalid) {
+            <span class="text-xs text-red-500">Surface requise (&gt; 0).</span>
+          }
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600">Nombre d'employés *</label>
           <input type="number" formControlName="employees" min="1"
-            class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
+            class="border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition"
+            [class.border-red-400]="submitted && form.get('employees')?.invalid"
+            [class.border-gray-200]="!(submitted && form.get('employees')?.invalid)" />
+          @if (submitted && form.get('employees')?.invalid) {
+            <span class="text-xs text-red-500">Nombre d'employés requis (&gt; 0).</span>
+          }
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600">Consommation énergétique (kWh/an) *</label>
@@ -98,14 +118,27 @@
       </button>
     </div>
 
+    <!-- Message d'erreur API -->
+    @if (errorMsg) {
+      <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+        {{ errorMsg }}
+      </div>
+    }
+
     <!-- Prévisualisation CO₂ -->
     <div class="flex gap-3 flex-wrap">
       <button type="button" (click)="previewCarbon()"
         class="flex-1 bg-cap-sand hover:bg-cap-cream text-cap-dark font-semibold py-3 px-6 rounded-xl transition">
         Estimer le CO₂
       </button>
-      <button type="submit"
-        class="flex-1 bg-cap-dark hover:bg-cap-mid text-white font-semibold py-3 px-6 rounded-xl transition">
+      <button type="submit" [disabled]="loading"
+        class="flex-1 bg-cap-dark hover:bg-cap-mid text-white font-semibold py-3 px-6 rounded-xl transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+        @if (loading) {
+          <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+          </svg>
+        }
         {{ isEditMode ? 'Enregistrer les modifications' : 'Créer le site' }}
       </button>
     </div>

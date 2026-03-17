@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule],
+  imports: [ReactiveFormsModule, CommonModule, RouterModule],
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
@@ -29,8 +29,8 @@ export class Login {
     }
 
     this.form = this.fb.group({
-      email:    ['admin@company.com', [Validators.required, Validators.email]],
-      password: ['admin123',          Validators.required]
+      email:    ['', [Validators.required, Validators.email]],
+      password: ['', Validators.required]
     });
   }
 
@@ -40,15 +40,13 @@ export class Login {
     this.loading = true;
     this.error   = '';
 
-    // Simule un délai réseau (à retirer quand l'API sera branchée)
-    setTimeout(() => {
-      const success = this.auth.login(this.form.value);
-      this.loading  = false;
+    this.auth.login(this.form.value).subscribe(success => {
+      this.loading = false;
       if (success) {
         this.router.navigate(['/']);
       } else {
         this.error = 'Email ou mot de passe incorrect.';
       }
-    }, 600);
+    });
   }
 }

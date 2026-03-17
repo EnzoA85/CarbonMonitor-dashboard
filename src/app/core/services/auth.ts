@@ -1,5 +1,11 @@
 import { Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { Observable, tap, map, catchError, of } from 'rxjs';
+
+const API_BASE = 'https://carbonmonitorwebapp-b5fscgd8g8djb8dk.spaincentral-01.azurewebsites.net/api';
+const TOKEN_KEY = 'auth_token';
+const USER_KEY  = 'auth_user';
 
 export interface AuthUser {
   id: number;
@@ -13,44 +19,66 @@ export interface LoginPayload {
   password: string;
 }
 
-// Comptes mock — à remplacer par un appel API + vrai JWT
-const MOCK_USERS: (AuthUser & { password: string })[] = [
-  { id: 1, name: 'Administrateur', email: 'admin@company.com', password: 'admin123', role: 'admin' },
-  { id: 2, name: 'Marie Dupont',   email: 'marie@company.com', password: 'marie123', role: 'user' }
-];
+interface AuthResponse {
+  token: string;
+  email: string;
+  role: string;
+}
 
-const TOKEN_KEY = 'auth_token';
-const USER_KEY  = 'auth_user';
+interface UserResponse {
+  id: number;
+  email: string;
+  role: string;
+  createdAt: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
 
-  // Signal réactif pour l'état de connexion (utilisé dans les templates)
   readonly currentUser = signal<AuthUser | null>(this.loadUser());
 
-  constructor(private router: Router) {}
+  constructor(private http: HttpClient, private router: Router) {}
 
-  /**
-   * Tente une connexion avec les identifiants fournis.
-   * Retourne true en cas de succès, false sinon.
-   * —— À remplacer : POST /api/auth/login → { access_token, user }
-   */
-  login(payload: LoginPayload): boolean {
-    const match = MOCK_USERS.find(
-      u => u.email === payload.email && u.password === payload.password
+  login(payload: LoginPayload): Observable<boolean> {
+    return this.http.post<AuthResponse>(`${API_BASE}/auth/login`, payload).pipe(
+      tap(res => {
+        localStorage.setItem(TOKEN_KEY, res.token);
+        const user: AuthUser = {
+          id: 0,
+          name: res.email.split('@')[0],
+          email: res.email,
+          role: res.role
+        };
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+        this.currentUser.set(user);
+        // Récupère les infos complètes en arrière-plan
+        this.fetchCurrentUser().subscribe();
+      }),
+      map(() => true),
+      catchError(() => of(false))
     );
+  }
 
-    if (!match) return false;
-
-    const { password: _pw, ...user } = match;
-
-    // Mock JWT — à remplacer par le vrai token renvoyé par le backend
-    const fakeToken = btoa(JSON.stringify({ sub: user.id, email: user.email, role: user.role, exp: Date.now() + 3600_000 }));
-
-    localStorage.setItem(TOKEN_KEY, fakeToken);
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-    this.currentUser.set(user);
-    return true;
+  fetchCurrentUser(): Observable<AuthUser | null> {
+    return this.http.get<UserResponse>(`${API_BASE}/auth/me`).pipe(
+      tap(res => {
+        const user: AuthUser = {
+          id: res.id,
+          name: res.email.split('@')[0],
+          email: res.email,
+          role: res.role
+        };
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+        this.currentUser.set(user);
+      }),
+      map(res => ({
+        id: res.id,
+        name: res.email.split('@')[0],
+        email: res.email,
+        role: res.role
+      })),
+      catchError(() => of(null))
+    );
   }
 
   logout(): void {
@@ -63,18 +91,33 @@ export class AuthService {
   isAuthenticated(): boolean {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return false;
-
-    // Vérification d'expiration du mock token
-    try {
-      const payload = JSON.parse(atob(token));
-      if (payload.exp && payload.exp < Date.now()) {
-        this.logout();
-        return false;
-      }
-      return true;
-    } catch {
+    // Rejette les anciens faux tokens mock (format base64 JSON non-JWT)
+    // Un vrai JWT contient exactement 2 points
+    if ((token.match(/\./g) ?? []).length !== 2) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      this.currentUser.set(null);
       return false;
     }
+    return true;
+  }
+
+  register(payload: { email: string; password: string }): Observable<void> {
+    return this.http.post<AuthResponse>(`${API_BASE}/auth/register`, payload).pipe(
+      tap(res => {
+        localStorage.setItem(TOKEN_KEY, res.token);
+        const user: AuthUser = {
+          id: 0,
+          name: res.email.split('@')[0],
+          email: res.email,
+          role: res.role
+        };
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+        this.currentUser.set(user);
+        this.fetchCurrentUser().subscribe();
+      }),
+      map(() => void 0)
+    );
   }
 
   getToken(): string | null {

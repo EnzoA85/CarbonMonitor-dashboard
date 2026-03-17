@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 import { SiteService } from '../../core/services/site';
-import { HeatmapCell } from '../../core/models/site.model';
+import { HeatmapCell, Site, CarbonResult } from '../../core/models/site.model';
 
 @Component({
   selector: 'app-heatmap',
@@ -13,9 +15,13 @@ import { HeatmapCell } from '../../core/models/site.model';
 })
 export class Heatmap implements OnInit {
 
-  // rows[i] = liste de cellules pour le site i (une par catégorie)
   rows: HeatmapCell[][] = [];
   categories: string[] = [];
+  
+  // Data state
+  private sites: Site[] = [];
+  private carbonData = new Map<number, CarbonResult>();
+  private destroyRef = inject(DestroyRef);
 
   tooltip: { visible: boolean; cell: HeatmapCell | null; x: number; y: number } = {
     visible: false, cell: null, x: 0, y: 0
@@ -26,7 +32,89 @@ export class Heatmap implements OnInit {
   constructor(private siteService: SiteService) {}
 
   ngOnInit() {
-    this.rows = this.siteService.getHeatmapData();
+    this.siteService.getSites().pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(sites => {
+      this.sites = sites;
+      
+      // Initialize with default carbon data
+      this.sites.forEach(site => {
+        if (!this.carbonData.has(site.id)) {
+          this.carbonData.set(site.id, this.defaultCarbon(site.id));
+        }
+      });
+      this.rebuildHeatmap();
+
+      // Load real data progressively
+      this.sites.forEach(site => {
+        this.siteService.calculateCarbon(site.id).pipe(
+          takeUntilDestroyed(this.destroyRef),
+          finalize(() => this.rebuildHeatmap())
+        ).subscribe({
+          next: (carbon) => {
+            this.carbonData.set(site.id, carbon);
+          },
+          error: () => {
+             // Keep default (0) on error
+             console.error(`Failed to load carbon for site ${site.id}`);
+          }
+        });
+      });
+    });
+  }
+
+  private defaultCarbon(siteId: number): CarbonResult {
+    return {
+      siteId,
+      co2Total: 0, co2PerM2: 0, co2PerEmployee: 0,
+      co2Construction: 0, co2Exploitation: 0,
+      breakdown: { energy: 0, parking: 0, materials: 0 }
+    };
+  }
+
+  private rebuildHeatmap() {
+    const categoriesList = [
+      { key: 'co2Total',        label: 'CO₂ Total' },
+      { key: 'co2PerM2',        label: 'CO₂/m²' },
+      { key: 'co2PerEmployee',  label: 'CO₂/employé' },
+      { key: 'co2Construction', label: 'Construction' },
+      { key: 'co2Exploitation', label: 'Exploitation' },
+      { key: 'energy',          label: 'Énergie' },
+      { key: 'materials',       label: 'Matériaux' },
+      { key: 'parking',         label: 'Parking' }
+    ];
+
+    const pickValue = (carbon: CarbonResult, k: string): number => {
+      if (k === 'energy')    return carbon.breakdown.energy;
+      if (k === 'materials') return carbon.breakdown.materials;
+      if (k === 'parking')   return carbon.breakdown.parking;
+      return (carbon as any)[k] as number;
+    };
+
+    // Calculate max per column based on *currently loaded* data
+    const currentData = this.sites.map(site => ({
+      site,
+      carbon: this.carbonData.get(site.id) || this.defaultCarbon(site.id)
+    }));
+    
+    // Only calculate max if we have data, avoid division by zero
+    const colMaxes = categoriesList.map(cat =>
+      Math.max(...currentData.map(d => pickValue(d.carbon, cat.key)), 1)
+    );
+
+    this.rows = currentData.map(({ site, carbon }) =>
+      categoriesList.map((cat, ci) => {
+        const value = pickValue(carbon, cat.key);
+        return {
+          siteId:    site.id,
+          siteName:  site.name,
+          category:  cat.label,
+          value,
+          intensity: value / colMaxes[ci]
+        } as HeatmapCell;
+      })
+    );
+
     if (this.rows.length) {
       this.categories = this.rows[0].map(c => c.category);
     }
@@ -42,6 +130,7 @@ export class Heatmap implements OnInit {
     const lig  = 90 - intensity * 30; // 90% (clair) → 60% (foncé)
     return `hsl(${hue}, ${sat}%, ${lig}%)`;
   }
+
 
   getTextColor(intensity: number): string {
     return intensity > 0.6 ? '#fff' : '#374151';
