@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { SiteService } from '../../../core/services/site';
 import { ExportService } from '../../../core/services/export';
 import { Site, CarbonResult } from '../../../core/models/site.model';
@@ -19,6 +19,7 @@ export class SiteDetail implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private siteService: SiteService,
     private exportService: ExportService
   ) {}
@@ -34,6 +35,14 @@ export class SiteDetail implements OnInit {
   exportPDF() {
     if (this.site && this.carbon) {
       this.exportService.exportSitePDF(this.site, this.carbon);
+    }
+  }
+
+  deleteSite() {
+    if (!this.site) return;
+    if (window.confirm(`Supprimer définitivement « ${this.site.name} » ?`)) {
+      this.siteService.deleteSite(this.site.id);
+      this.router.navigate(['/sites']);
     }
   }
 

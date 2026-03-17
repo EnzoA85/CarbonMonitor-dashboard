@@ -30,6 +30,10 @@ export const routes: Routes = [
     component: SiteForm
   },
   {
+    path: 'sites/:id/edit',
+    component: SiteForm
+  },
+  {
     path: 'sites/:id',
     canActivate: [authGuard],
     component: SiteDetail

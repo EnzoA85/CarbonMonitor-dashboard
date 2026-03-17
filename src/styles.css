@@ -1,3 +1,24 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800&display=swap');
 
 @import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  /* CapCarbon brand palette */
+  --color-cap-darkest: #0a1810;
+  --color-cap-dark:    #0f2218;
+  --color-cap-mid:     #1a3828;
+  --color-cap-green:   #2d6a4f;
+  --color-cap-sage:    #4a9970;
+  --color-cap-light:   #d1ead8;
+  --color-cap-cream:   #f5f0e7;
+  --color-cap-sand:    #ece7dc;
+  --color-cap-muted:   #8a9e92;
+}
+
+/* Sidebar active nav item — guaranteed override */
+.cap-nav-active {
+  background-color: #1a3828 !important;
+  color: #ffffff !important;
+}
