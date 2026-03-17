@@ -1,0 +1,164 @@
+@if (site && carbon) {
+  <div class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex items-center gap-4">
+      <a routerLink="/sites" class="text-gray-400 hover:text-gray-600 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </a>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-800">{{ site.name }}</h1>
+        <p class="text-gray-500 text-sm mt-0.5">{{ site.location }}</p>
+      </div>
+      <a routerLink="/compare" class="ml-auto text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium px-4 py-2 rounded-xl transition">
+        Comparer ce site
+      </a>
+    </div>
+
+    <!-- KPIs du site -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 text-center">
+        <div class="text-2xl font-bold text-green-600">{{ formatCO2(carbon.co2Total) }}</div>
+        <div class="text-xs text-gray-400 mt-1">CO₂ Total</div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 text-center">
+        <div class="text-2xl font-bold text-blue-600">{{ carbon.co2PerM2 }} kg</div>
+        <div class="text-xs text-gray-400 mt-1">CO₂ / m²</div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 text-center">
+        <div class="text-2xl font-bold text-purple-600">{{ formatCO2(carbon.co2PerEmployee) }}</div>
+        <div class="text-xs text-gray-400 mt-1">CO₂ / employé</div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 text-center">
+        <div class="text-2xl font-bold text-amber-600">{{ formatCO2(carbon.co2Construction) }}</div>
+        <div class="text-xs text-gray-400 mt-1">Construction</div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 text-center">
+        <div class="text-2xl font-bold text-red-500">{{ formatCO2(carbon.co2Exploitation) }}</div>
+        <div class="text-xs text-gray-400 mt-1">Exploitation</div>
+      </div>
+    </div>
+
+    <!-- Infos + Matériaux -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+      <!-- Caractéristiques -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-base font-semibold text-gray-700 mb-4">Caractéristiques du site</h2>
+        <div class="space-y-3">
+          <div class="flex justify-between py-2 border-b border-gray-50">
+            <span class="text-gray-500 text-sm">Surface</span>
+            <span class="font-semibold text-gray-700">{{ site.surface | number }} m²</span>
+          </div>
+          <div class="flex justify-between py-2 border-b border-gray-50">
+            <span class="text-gray-500 text-sm">Employés</span>
+            <span class="font-semibold text-gray-700">{{ site.employees | number }}</span>
+          </div>
+          <div class="flex justify-between py-2 border-b border-gray-50">
+            <span class="text-gray-500 text-sm">Consommation énergie</span>
+            <span class="font-semibold text-gray-700">{{ site.energyConsumption | number }} kWh/an</span>
+          </div>
+          <div class="flex justify-between py-2 border-b border-gray-50">
+            <span class="text-gray-500 text-sm">Places parking</span>
+            <span class="font-semibold text-gray-700">{{ site.parkingSpaces }}</span>
+          </div>
+          <div class="flex justify-between py-2">
+            <span class="text-gray-500 text-sm">Ajouté le</span>
+            <span class="font-semibold text-gray-700">{{ site.createdAt | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Répartition des émissions (barres horizontales) -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-base font-semibold text-gray-700 mb-4">Répartition des émissions</h2>
+        <div class="space-y-4">
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <span class="text-gray-600">Énergie</span>
+              <span class="font-semibold text-gray-700">{{ formatCO2(carbon.breakdown.energy) }}</span>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-2.5">
+              <div class="h-2.5 rounded-full bg-blue-500"
+                [style.width.%]="(carbon.breakdown.energy / carbon.co2Total) * 100"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <span class="text-gray-600">Matériaux construction</span>
+              <span class="font-semibold text-gray-700">{{ formatCO2(carbon.breakdown.materials) }}</span>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-2.5">
+              <div class="h-2.5 rounded-full bg-amber-500"
+                [style.width.%]="(carbon.breakdown.materials / carbon.co2Total) * 100"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <span class="text-gray-600">Parking</span>
+              <span class="font-semibold text-gray-700">{{ formatCO2(carbon.breakdown.parking) }}</span>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-2.5">
+              <div class="h-2.5 rounded-full bg-red-400"
+                [style.width.%]="(carbon.breakdown.parking / carbon.co2Total) * 100"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Tableau des matériaux -->
+    @if (site.materials.length > 0) {
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-5 border-b border-gray-100">
+          <h2 class="text-base font-semibold text-gray-700">Détail des matériaux</h2>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50">
+                <th class="px-4 py-3 text-left text-xs text-gray-500 font-semibold uppercase">Matériau</th>
+                <th class="px-4 py-3 text-right text-xs text-gray-500 font-semibold uppercase">Quantité (t)</th>
+                <th class="px-4 py-3 text-right text-xs text-gray-500 font-semibold uppercase">kgCO₂/t</th>
+                <th class="px-4 py-3 text-right text-xs text-gray-500 font-semibold uppercase">CO₂ total</th>
+                <th class="px-4 py-3 text-left text-xs text-gray-500 font-semibold uppercase">Part</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (mat of site.materials; track mat.name) {
+                <tr class="border-t border-gray-50 hover:bg-gray-50 transition">
+                  <td class="px-4 py-3 font-medium text-gray-700">{{ mat.name }}</td>
+                  <td class="px-4 py-3 text-right text-gray-600">{{ mat.quantity | number }}</td>
+                  <td class="px-4 py-3 text-right text-gray-600">{{ mat.co2PerTon | number }}</td>
+                  <td class="px-4 py-3 text-right font-semibold text-amber-600">{{ formatCO2(mat.quantity * mat.co2PerTon) }}</td>
+                  <td class="px-4 py-3">
+                    <div class="flex items-center gap-2">
+                      <div class="w-20 bg-gray-100 rounded-full h-2">
+                        <div class="h-2 rounded-full bg-amber-400"
+                          [style.width.%]="getMaterialBarPct(mat)"></div>
+                      </div>
+                      <span class="text-xs text-gray-500">{{ getMaterialBarPct(mat) }}%</span>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+  </div>
+} @else {
+  <div class="flex flex-col items-center justify-center py-20 text-gray-400">
+    <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+        d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <p class="text-lg font-medium">Site introuvable</p>
+    <a routerLink="/sites" class="mt-3 text-blue-600 hover:text-blue-800">← Retour aux sites</a>
+  </div>
+}

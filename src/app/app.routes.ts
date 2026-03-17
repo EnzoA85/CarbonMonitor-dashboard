@@ -1,14 +1,33 @@
 import { Routes } from '@angular/router';
-import { DashboardComponent } from './features/dashboard/dashboard/dashboard.component';
-import { SitesComponent } from './features/sites/sites/sites.component';
+import { Dashboard } from './features/dashboard/dashboard/dashboard';
+import { Sites } from './features/sites/sites/sites';
+import { SiteForm } from './features/sites/site-form/site-form';
+import { SiteDetail } from './features/sites/site-detail/site-detail';
+import { Compare } from './features/compare/compare';
 
 export const routes: Routes = [
   {
     path: '',
-    component: DashboardComponent
+    component: Dashboard
   },
   {
     path: 'sites',
-    component: SitesComponent
+    component: Sites
+  },
+  {
+    path: 'sites/new',
+    component: SiteForm
+  },
+  {
+    path: 'sites/:id',
+    component: SiteDetail
+  },
+  {
+    path: 'compare',
+    component: Compare
+  },
+  {
+    path: '**',
+    redirectTo: ''
   }
 ];

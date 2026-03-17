@@ -1,0 +1,142 @@
+<div class="max-w-3xl mx-auto">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">Nouveau site</h2>
+    <p class="text-gray-500 mt-1">Renseignez les informations du site pour calculer son empreinte carbone.</p>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-6">
+
+    <!-- Informations générales -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+        <span class="w-7 h-7 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-sm font-bold">1</span>
+        Informations générales
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-600">Nom du site *</label>
+          <input type="text" formControlName="name" placeholder="Ex: Siège Social Paris"
+            class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-600">Localisation *</label>
+          <input type="text" formControlName="location" placeholder="Ex: Paris, Île-de-France"
+            class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Caractéristiques physiques -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+        <span class="w-7 h-7 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-sm font-bold">2</span>
+        Caractéristiques physiques
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-600">Surface (m²) *</label>
+          <input type="number" formControlName="surface" min="1"
+            class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-600">Nombre d'employés *</label>
+          <input type="number" formControlName="employees" min="1"
+            class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-600">Consommation énergétique (kWh/an) *</label>
+          <input type="number" formControlName="energyConsumption" min="0"
+            class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-600">Places de parking</label>
+          <input type="number" formControlName="parkingSpaces" min="0"
+            class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Matériaux de construction -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+        <span class="w-7 h-7 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-sm font-bold">3</span>
+        Matériaux de construction
+      </h3>
+
+      <div formArrayName="materials" class="space-y-3">
+        @for (mat of materialsArray.controls; track $index) {
+          <div [formGroupName]="$index" class="flex gap-3 items-center bg-gray-50 rounded-xl p-3">
+            <div class="flex-1">
+              <label class="text-xs text-gray-500 mb-1 block">Matériau</label>
+              <select formControlName="name" (change)="onMaterialNameChange($index)"
+                class="w-full border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
+                @for (opt of materialOptions; track opt.label) {
+                  <option [value]="opt.label">{{ opt.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="w-36">
+              <label class="text-xs text-gray-500 mb-1 block">Quantité (tonnes)</label>
+              <input type="number" formControlName="quantity" min="0"
+                class="w-full border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+            </div>
+            <div class="w-36">
+              <label class="text-xs text-gray-500 mb-1 block">kgCO₂/tonne</label>
+              <input type="number" formControlName="co2PerTon" min="0"
+                class="w-full border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+            </div>
+            <button type="button" (click)="removeMaterial($index)"
+              class="mt-5 text-red-400 hover:text-red-600 text-xl font-bold leading-none">×</button>
+          </div>
+        }
+      </div>
+
+      <button type="button" (click)="addMaterial()"
+        class="mt-4 flex items-center gap-2 text-green-600 hover:text-green-800 font-medium text-sm">
+        <span class="text-xl leading-none">+</span> Ajouter un matériau
+      </button>
+    </div>
+
+    <!-- Prévisualisation CO₂ -->
+    <div class="flex gap-3 flex-wrap">
+      <button type="button" (click)="previewCarbon()"
+        class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition">
+        Estimer le CO₂
+      </button>
+      <button type="submit"
+        class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-xl transition">
+        Créer le site
+      </button>
+    </div>
+
+    <!-- Résultat de prévisualisation -->
+    @if (previewResult) {
+      <div class="bg-green-50 border border-green-200 rounded-2xl p-6">
+        <h4 class="font-semibold text-green-800 mb-4 text-lg">Estimation de l'empreinte carbone</h4>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-green-700">{{ formatCO2(previewResult.co2Total) }}</div>
+            <div class="text-xs text-gray-500 mt-1">CO₂ total</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-blue-700">{{ previewResult.co2PerM2 }} kgCO₂/m²</div>
+            <div class="text-xs text-gray-500 mt-1">Par m²</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-purple-700">{{ formatCO2(previewResult.co2PerEmployee) }}</div>
+            <div class="text-xs text-gray-500 mt-1">Par employé</div>
+          </div>
+          <div class="text-center">
+            <div class="text-lg font-semibold text-orange-600">{{ formatCO2(previewResult.co2Construction) }}</div>
+            <div class="text-xs text-gray-500 mt-1">Construction</div>
+          </div>
+          <div class="text-center">
+            <div class="text-lg font-semibold text-red-600">{{ formatCO2(previewResult.co2Exploitation) }}</div>
+            <div class="text-xs text-gray-500 mt-1">Exploitation</div>
+          </div>
+        </div>
+      </div>
+    }
+
+  </form>
+</div>
