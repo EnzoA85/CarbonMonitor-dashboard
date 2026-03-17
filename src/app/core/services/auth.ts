@@ -13,6 +13,12 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface RegisterPayload {
+  name: string;
+  email: string;
+  password: string;
+}
+
 // Comptes mock — à remplacer par un appel API + vrai JWT
 const MOCK_USERS: (AuthUser & { password: string })[] = [
   { id: 1, name: 'Administrateur', email: 'admin@company.com', password: 'admin123', role: 'admin' },
@@ -51,6 +57,32 @@ export class AuthService {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     this.currentUser.set(user);
     return true;
+  }
+
+  /**
+   * Crée un nouveau compte utilisateur.
+   * Retourne 'email_taken' si l'email est déjà utilisé, sinon connecte directement.
+   * —— À remplacer : POST /api/auth/register
+   */
+  register(payload: RegisterPayload): 'ok' | 'email_taken' {
+    const exists = MOCK_USERS.some(u => u.email === payload.email);
+    if (exists) return 'email_taken';
+
+    const newUser: AuthUser & { password: string } = {
+      id:       MOCK_USERS.length + 1,
+      name:     payload.name,
+      email:    payload.email,
+      password: payload.password,
+      role:     'user'
+    };
+    MOCK_USERS.push(newUser);
+
+    const { password: _pw, ...user } = newUser;
+    const fakeToken = btoa(JSON.stringify({ sub: user.id, email: user.email, role: user.role, exp: Date.now() + 3600_000 }));
+    localStorage.setItem(TOKEN_KEY, fakeToken);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    this.currentUser.set(user);
+    return 'ok';
   }
 
   logout(): void {
