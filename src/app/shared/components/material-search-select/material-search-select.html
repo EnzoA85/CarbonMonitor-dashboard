@@ -1,0 +1,41 @@
+<div class="material-select" [class.disabled]="disabled">
+  <button
+    type="button"
+    class="material-select-trigger"
+    [disabled]="disabled"
+    (click)="toggle()"
+  >
+    <span class="material-select-value">{{ selectedLabel }}</span>
+    <svg class="material-select-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+    </svg>
+  </button>
+
+  @if (open()) {
+    <div class="material-select-dropdown">
+      <input
+        type="text"
+        class="material-select-search"
+        placeholder="Rechercher dans la liste complète…"
+        [value]="searchQuery()"
+        (input)="onSearchInput($event)"
+        (click)="$event.stopPropagation()"
+      />
+      <div class="material-select-options">
+        @for (opt of displayedOptions; track opt.id) {
+          <button
+            type="button"
+            class="material-select-option"
+            [class.selected]="opt.id === value"
+            (click)="select(opt)"
+          >
+            {{ opt.name }} ({{ opt.emissionFactor | number:'1.2-3' }} kgCO₂e/{{ opt.unit || 'kg' }})
+          </button>
+        }
+        @if (displayedOptions.length === 0) {
+          <div class="material-select-empty">Aucun résultat</div>
+        }
+      </div>
+    </div>
+  }
+</div>

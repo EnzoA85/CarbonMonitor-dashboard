@@ -1,16 +1,48 @@
 <div class="space-y-6">
-
+  @if (loading) {
+    <div class="flex flex-col items-center justify-center py-20 text-gray-500 gap-3">
+      <svg class="w-10 h-10 animate-spin text-cap-mid" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+      </svg>
+      <span>Chargement des sites…</span>
+    </div>
+  } @else if (error) {
+    <div class="bg-red-50 border border-red-200 rounded-2xl p-6">
+      <h3 class="font-semibold text-red-800 mb-2">Impossible de charger les données</h3>
+      <p class="text-red-700 text-sm mb-4">{{ error }}</p>
+      <p class="text-red-600 text-xs mb-4">Vérifiez que l'API CarbonMonitor est démarrée sur <code class="bg-red-100 px-1 rounded">http://localhost:8080/api</code></p>
+      <button (click)="loadData()"
+        class="bg-red-100 hover:bg-red-200 text-red-800 font-medium px-4 py-2 rounded-xl text-sm transition">
+        Réessayer
+      </button>
+    </div>
+  } @else {
   <!-- Header -->
-  <div class="flex items-center justify-between">
+  <div class="flex flex-wrap items-center justify-between gap-4">
     <div>
       <p class="text-[10px] font-bold text-cap-muted uppercase tracking-widest mb-0.5">ACCUEIL</p>
-      <h1 class="text-2xl font-bold text-cap-dark">Tableau de bord carbone</h1>
+      <h1 class="text-2xl font-bold text-cap-dark">CarbonMonitor — Pilotage carbone terrain</h1>
       <p class="text-gray-500 mt-1">Vue d'évolution des KPI, répartition construction/exploitation et dernier diagnostic.</p>
     </div>
-    <a routerLink="/sites/new"
-      class="bg-cap-dark hover:bg-cap-mid text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm">
-      + Nouveau site
-    </a>
+    <div class="flex gap-3">
+      <a routerLink="/compare"
+        class="bg-cap-sand hover:bg-cap-cream text-cap-dark font-semibold px-4 py-2.5 rounded-xl transition text-sm">
+        Comparer les sites
+      </a>
+      <a routerLink="/history"
+        class="bg-cap-sand hover:bg-cap-cream text-cap-dark font-semibold px-4 py-2.5 rounded-xl transition text-sm">
+        Historique
+      </a>
+      <a routerLink="/heatmap"
+        class="bg-cap-sand hover:bg-cap-cream text-cap-dark font-semibold px-4 py-2.5 rounded-xl transition text-sm">
+        Heatmap
+      </a>
+      <a routerLink="/sites/new"
+        class="bg-cap-dark hover:bg-cap-mid text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm">
+        + Nouveau site
+      </a>
+    </div>
   </div>
 
   <!-- KPIs -->
@@ -61,8 +93,8 @@
       </div>
     </div>
 
-    <!-- Donut : Construction vs Exploitation -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col items-center justify-center">
+    <!-- Donut + Répartition détaillée -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col">
       <h2 class="text-base font-semibold text-cap-dark mb-4 self-start">Répartition des émissions</h2>
       <div class="relative w-36 h-36">
         <svg viewBox="0 0 120 120" class="w-full h-full -rotate-90">
@@ -91,6 +123,23 @@
           <span class="w-3 h-3 rounded-full bg-blue-400 inline-block"></span>
           <span class="text-gray-600">Exploitation</span>
           <span class="ml-auto font-semibold text-gray-700">{{ donutExploitation }}%</span>
+        </div>
+      </div>
+      <div class="mt-6 pt-4 border-t border-gray-100">
+        <h3 class="text-sm font-semibold text-gray-600 mb-3">Répartition détaillée</h3>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Énergie</span>
+            <span class="font-semibold text-blue-600">{{ formatCO2(totalEnergy) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Matériaux</span>
+            <span class="font-semibold text-amber-600">{{ formatCO2(totalMaterials) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Parking</span>
+            <span class="font-semibold text-red-500">{{ formatCO2(totalParking) }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -162,5 +211,15 @@
     </div>
 
   </div>
+  @if (sitesData.length === 0) {
+    <div class="bg-cap-light rounded-2xl border border-cap-sand p-8 text-center">
+      <p class="text-gray-600 mb-4">Aucun site enregistré.</p>
+      <a routerLink="/sites/new"
+        class="inline-block bg-cap-dark hover:bg-cap-mid text-white font-semibold px-6 py-3 rounded-xl transition">
+        Créer mon premier site
+      </a>
+    </div>
+  }
+  }
 
 </div>

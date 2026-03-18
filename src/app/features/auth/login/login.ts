@@ -29,26 +29,24 @@ export class Login {
     }
 
     this.form = this.fb.group({
-      email:    ['admin@company.com', [Validators.required, Validators.email]],
-      password: ['admin123',          Validators.required]
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', Validators.required],
     });
   }
 
-  submit() {
+  async submit() {
     if (this.form.invalid) return;
 
     this.loading = true;
-    this.error   = '';
+    this.error = '';
 
-    // Simule un délai réseau (à retirer quand l'API sera branchée)
-    setTimeout(() => {
-      const success = this.auth.login(this.form.value);
-      this.loading  = false;
-      if (success) {
-        this.router.navigate(['/']);
-      } else {
-        this.error = 'Email ou mot de passe incorrect.';
-      }
-    }, 600);
+    const result = await this.auth.login(this.form.value);
+    this.loading = false;
+
+    if (result.ok) {
+      this.router.navigate(['/']);
+    } else {
+      this.error = result.error ?? 'Email ou mot de passe incorrect.';
+    }
   }
 }
