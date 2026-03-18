@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import jsPDF from 'jspdf';
 import { Site, CarbonResult } from '../models/site.model';
 
@@ -6,8 +6,13 @@ import { Site, CarbonResult } from '../models/site.model';
 export class ExportService {
 
   exportSitePDF(site: Site, carbon: CarbonResult): void {
-    const fmt = (v: number) =>
-      v >= 1000 ? (v / 1000).toFixed(1) + ' tCO2e' : v.toFixed(0) + ' kgCO2e';
+    const fmt = (v: number) => {
+      if (v >= 1_000_000) return (v / 1_000_000).toFixed(2) + ' MtCO2e';
+      if (v >= 1000) return (v / 1000).toFixed(1) + ' tCO2e';
+      return Math.round(v) + ' kgCO2e';
+    };
+    const fmtDensity = (v: number) =>
+      v >= 1000 ? (v / 1000).toFixed(1) + ' t/m²' : (Math.round(v * 10) / 10) + ' kg/m²';
 
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const W = 210;
@@ -53,7 +58,7 @@ export class ExportService {
     doc.rect(0, 0, W, 28, 'F');
 
     setFont('bold', 18, 255, 255, 255);
-    doc.text('CarbonTrack', col, 12);
+    doc.text('CarbonMonitor', col, 12);
     setFont('normal', 9, 187, 247, 208);
     doc.text('Rapport d\'empreinte carbone', col, 19);
 
@@ -78,7 +83,7 @@ export class ExportService {
     const kpiRow2 = y + 22;
 
     kpiBox(col,              y, kpiW, 'CO2 Total',      fmt(carbon.co2Total),          21, 128, 61);
-    kpiBox(col + kpiW + 4,   y, kpiW, 'CO2 par m2',     `${carbon.co2PerM2} kg/m2`,    29, 78, 216);
+    kpiBox(col + kpiW + 4,   y, kpiW, 'CO2 par m2',     fmtDensity(carbon.co2PerM2),  29, 78, 216);
     kpiBox(col + (kpiW+4)*2, y, kpiW, 'CO2 / employe',  fmt(carbon.co2PerEmployee),    124, 58, 237);
 
     kpiBox(col,              kpiRow2, kpiW, 'Construction', fmt(carbon.co2Construction), 217, 119, 6);
@@ -129,9 +134,9 @@ export class ExportService {
       for (const m of site.materials) {
         if (y > 270) { doc.addPage(); y = margin; }
         setFont('normal', 9, 31, 41, 55);
-        doc.text(m.name, cols[0], y + 4);
-        doc.text(m.quantity.toLocaleString('fr-FR'), cols[1], y + 4);
-        doc.text(m.co2PerTon.toLocaleString('fr-FR'), cols[2], y + 4);
+        doc.text(m.name.substring(0, 25), cols[0], y + 4);
+        doc.text(m.quantity.toLocaleString('fr-FR', { maximumFractionDigits: 2 }), cols[1], y + 4);
+        doc.text((Math.round(m.co2PerTon * 100) / 100).toLocaleString('fr-FR'), cols[2], y + 4);
         setFont('bold', 9, 21, 128, 61);
         doc.text(fmt(m.quantity * m.co2PerTon), cols[3], y + 4);
         doc.line(col, y + 7, W - margin, y + 7);
@@ -144,11 +149,11 @@ export class ExportService {
     doc.setFillColor(243, 244, 246);
     doc.rect(0, footerY - 4, W, 12, 'F');
     setFont('normal', 7, 156, 163, 175);
-    doc.text('CarbonTrack — Rapport d\'empreinte carbone', col, footerY);
+    doc.text('CarbonMonitor — Rapport d\'empreinte carbone', col, footerY);
     doc.text(`${site.name} · ${new Date().toLocaleDateString('fr-FR')}`, W - margin, footerY, { align: 'right' });
 
     // ── Téléchargement + nouvel onglet ────────────────────────────────────
-    const filename = `carbontrack_${site.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
+    const filename = `carbonmonitor_${site.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
     doc.save(filename);
 
     const blobUrl = doc.output('bloburl');

@@ -1,229 +1,334 @@
 import { Injectable } from '@angular/core';
-import { Site, CarbonResult, HistoricalEntry, HeatmapCell } from '../models/site.model';
+import { AuthService } from './auth';
+import {
+  apiAddSiteMaterial,
+  apiCalculateSite,
+  apiCreateSite,
+  apiDeleteSite,
+  apiGetSite,
+  apiGetSiteHistory,
+  apiGetSiteMaterials,
+  apiGetSiteReport,
+  apiListMaterials,
+  apiListSites,
+  apiRemoveSiteMaterial,
+  apiUpdateSite,
+  type CarbonResultResponse,
+  type MaterialResponse,
+  type SiteMaterialResponse,
+  type SiteResponse,
+} from './api';
+import {
+  CarbonResult,
+  HeatmapCell,
+  HistoricalEntry,
+  Material,
+  Site,
+} from '../models/site.model';
 
-// Facteurs d'émission (kgCO2e)
-const ENERGY_FACTOR = 0.0571;      // kgCO2/kWh (réseau FR moyen)
-const PARKING_FACTOR = 1500;       // kgCO2 par place (construction béton)
-const PARKING_USAGE_FACTOR = 200;  // kgCO2/place/an (usage voitures)
+const ENERGY_FACTOR = 0.0571;
+const PARKING_USAGE_FACTOR = 200;
 
-@Injectable({
-  providedIn: 'root'
-})
+function toSite(sr: SiteResponse, materials: Material[] = []): Site {
+  return {
+    id: sr.id,
+    name: sr.name ?? '',
+    location: sr.location ?? '',
+    surface: sr.surface ?? 0,
+    employees: sr.employees ?? 0,
+    energyConsumption: sr.energyConsumption ?? 0,
+    parkingSpaces: sr.parkingSpaces ?? 0,
+    materials,
+    createdAt: sr.createdAt ? new Date(sr.createdAt) : new Date(),
+  };
+}
+
+function toMaterial(sm: SiteMaterialResponse): Material {
+  const u = sm.material?.unit?.toLowerCase() ?? 'kg';
+  const co2PerTon = u.includes('tonne') || u.includes('ton')
+    ? sm.material.emissionFactor
+    : sm.material.emissionFactor * 1000;
+  const quantityTonnes =
+    u.includes('tonne') || u.includes('ton') ? sm.quantity : sm.quantity / 1000;
+  return {
+    name: sm.material?.name ?? '',
+    quantity: quantityTonnes,
+    co2PerTon,
+  };
+}
+
+function toCarbonResult(
+  cr: CarbonResultResponse,
+  site: Site
+): CarbonResult {
+  const energy = (site.energyConsumption ?? 0) * ENERGY_FACTOR;
+  const parking = (site.parkingSpaces ?? 0) * PARKING_USAGE_FACTOR;
+  return {
+    siteId: cr.siteId,
+    co2Total: cr.totalEmission ?? 0,
+    co2PerM2: cr.co2PerM2 ?? 0,
+    co2PerEmployee: cr.co2PerEmployee ?? 0,
+    co2Construction: cr.constructionEmission ?? 0,
+    co2Exploitation: cr.exploitationEmission ?? 0,
+    breakdown: {
+      energy,
+      parking,
+      materials: cr.constructionEmission ?? 0,
+    },
+  };
+}
+
+@Injectable({ providedIn: 'root' })
 export class SiteService {
+  constructor(private auth: AuthService) {}
 
-  private sites: Site[] = [
-    {
-      id: 1,
-      name: 'Siège Social Paris',
-      location: 'Paris, Île-de-France',
-      surface: 15000,
-      employees: 2500,
-      energyConsumption: 2200000,
-      parkingSpaces: 350,
-      createdAt: new Date('2024-01-15'),
-      materials: [
-        { name: 'Béton', quantity: 850, co2PerTon: 210 },
-        { name: 'Acier', quantity: 120, co2PerTon: 1850 },
-        { name: 'Verre', quantity: 40, co2PerTon: 900 },
-        { name: 'Bois', quantity: 60, co2PerTon: 50 }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Campus Rennes',
-      location: 'Rennes, Bretagne',
-      surface: 11771,
-      employees: 1800,
-      energyConsumption: 1840000,
-      parkingSpaces: 200,
-      createdAt: new Date('2024-03-10'),
-      materials: [
-        { name: 'Béton', quantity: 620, co2PerTon: 210 },
-        { name: 'Acier', quantity: 85, co2PerTon: 1850 },
-        { name: 'Bois', quantity: 120, co2PerTon: 50 },
-        { name: 'Isolant', quantity: 25, co2PerTon: 400 }
-      ]
-    },
-    {
-      id: 3,
-      name: 'Entrepôt Lyon',
-      location: 'Lyon, Auvergne-Rhône-Alpes',
-      surface: 8500,
-      employees: 320,
-      energyConsumption: 950000,
-      parkingSpaces: 80,
-      createdAt: new Date('2024-05-20'),
-      materials: [
-        { name: 'Béton', quantity: 400, co2PerTon: 210 },
-        { name: 'Acier', quantity: 200, co2PerTon: 1850 },
-        { name: 'Aluminium', quantity: 15, co2PerTon: 8900 }
-      ]
-    },
-    {
-      id: 4,
-      name: 'Bureau Bordeaux',
-      location: 'Bordeaux, Nouvelle-Aquitaine',
-      surface: 3200,
-      employees: 450,
-      energyConsumption: 420000,
-      parkingSpaces: 50,
-      createdAt: new Date('2024-07-08'),
-      materials: [
-        { name: 'Béton', quantity: 150, co2PerTon: 210 },
-        { name: 'Bois', quantity: 80, co2PerTon: 50 },
-        { name: 'Verre', quantity: 20, co2PerTon: 900 }
-      ]
+  private getToken(): string {
+    const t = this.auth.getToken();
+    if (!t) throw new Error('Non authentifié');
+    return t;
+  }
+
+  async loadSites(): Promise<Site[]> {
+    const token = this.getToken();
+    const list = await apiListSites(token);
+    const sites: Site[] = [];
+    for (const sr of list) {
+      const mats = await apiGetSiteMaterials(token, sr.id).catch(() => []);
+      sites.push(toSite(sr, mats.map(toMaterial)));
     }
-  ];
-
-  getSites(): Site[] {
-    return [...this.sites];
+    return sites;
   }
 
-  getSiteById(id: number): Site | undefined {
-    return this.sites.find(s => s.id === id);
+  async getSiteById(id: number): Promise<Site | undefined> {
+    const token = this.getToken();
+    try {
+      const sr = await apiGetSite(token, id);
+      const mats = await apiGetSiteMaterials(token, id);
+      return toSite(sr, mats.map(toMaterial));
+    } catch {
+      return undefined;
+    }
   }
 
-  addSite(site: Omit<Site, 'id'>): Site {
-    const newSite: Site = { ...site, id: Date.now() };
-    this.sites.push(newSite);
-    return newSite;
+  async createSite(data: Omit<Site, 'id' | 'materials' | 'createdAt'>): Promise<Site> {
+    const token = this.getToken();
+    const sr = await apiCreateSite(token, {
+      name: data.name,
+      location: data.location,
+      surface: data.surface,
+      employees: data.employees,
+      energyConsumption: data.energyConsumption,
+      parkingSpaces: data.parkingSpaces,
+    });
+    return toSite(sr, []);
   }
 
-  updateSite(id: number, data: Omit<Site, 'id'>): Site | undefined {
-    const idx = this.sites.findIndex(s => s.id === id);
-    if (idx === -1) return undefined;
-    this.sites[idx] = { ...data, id };
-    return this.sites[idx];
+  async updateSite(
+    id: number,
+    data: Omit<Site, 'id' | 'materials' | 'createdAt'>
+  ): Promise<Site | undefined> {
+    const token = this.getToken();
+    try {
+      const sr = await apiUpdateSite(token, id, {
+        name: data.name,
+        location: data.location,
+        surface: data.surface,
+        employees: data.employees,
+        energyConsumption: data.energyConsumption,
+        parkingSpaces: data.parkingSpaces,
+      });
+      const mats = await apiGetSiteMaterials(token, id);
+      return toSite(sr, mats.map(toMaterial));
+    } catch {
+      return undefined;
+    }
   }
 
-  deleteSite(id: number): void {
-    this.sites = this.sites.filter(s => s.id !== id);
+  async deleteSite(id: number): Promise<void> {
+    const token = this.getToken();
+    await apiDeleteSite(token, id);
   }
 
-  calculateCarbon(site: Site): CarbonResult {
-    // CO2 exploitation (énergie annuelle)
-    const co2Energy = site.energyConsumption * ENERGY_FACTOR;
+  async triggerCalculate(siteId: number): Promise<void> {
+    const token = this.getToken();
+    await apiCalculateSite(token, siteId);
+  }
 
-    // CO2 parking usage annuel
-    const co2ParkingUsage = site.parkingSpaces * PARKING_USAGE_FACTOR;
+  async calculateCarbon(site: Site): Promise<CarbonResult> {
+    const token = this.getToken();
+    const cr = await apiGetSiteReport(token, site.id);
+    return toCarbonResult(cr, site);
+  }
 
-    // CO2 matériaux (construction)
+  async getCarbonReport(siteId: number, site: Site): Promise<CarbonResult> {
+    const token = this.getToken();
+    const cr = await apiGetSiteReport(token, siteId);
+    return toCarbonResult(cr, site);
+  }
+
+  async listMaterials(): Promise<MaterialResponse[]> {
+    const token = this.getToken();
+    return apiListMaterials(token);
+  }
+
+  async getSiteMaterials(siteId: number): Promise<SiteMaterialResponse[]> {
+    const token = this.getToken();
+    return apiGetSiteMaterials(token, siteId);
+  }
+
+  async addSiteMaterial(
+    siteId: number,
+    materialId: number,
+    quantity: number
+  ): Promise<void> {
+    const token = this.getToken();
+    await apiAddSiteMaterial(token, siteId, { materialId, quantity });
+  }
+
+  async removeSiteMaterial(siteId: number, siteMaterialId: number): Promise<void> {
+    const token = this.getToken();
+    await apiRemoveSiteMaterial(token, siteId, siteMaterialId);
+  }
+
+  /** Calcul local pour prévisualisation (sans appel API) */
+  calculateCarbonLocal(site: Site): CarbonResult {
+    const co2Energy = (site.energyConsumption ?? 0) * ENERGY_FACTOR;
+    const co2Parking = (site.parkingSpaces ?? 0) * PARKING_USAGE_FACTOR;
     const co2Materials = site.materials.reduce(
-      (sum, m) => sum + m.quantity * m.co2PerTon,
+      (s, m) => s + m.quantity * m.co2PerTon,
       0
     );
-
-    // CO2 construction parking (amorti sur 50 ans)
-    const co2ParkingConstruction = (site.parkingSpaces * PARKING_FACTOR) / 50;
-
-    const co2Construction = co2Materials + co2ParkingConstruction;
-    const co2Exploitation = co2Energy + co2ParkingUsage;
+    const co2Construction = co2Materials;
+    const co2Exploitation = co2Energy + co2Parking;
     const co2Total = co2Construction + co2Exploitation;
-
+    const surface = site.surface ?? 1;
+    const employees = site.employees ?? 1;
     return {
       siteId: site.id,
-      co2Total: Math.round(co2Total),
-      co2PerM2: Math.round((co2Total / site.surface) * 10) / 10,
-      co2PerEmployee: Math.round(co2Total / site.employees),
-      co2Construction: Math.round(co2Construction),
-      co2Exploitation: Math.round(co2Exploitation),
+      co2Total,
+      co2PerM2: co2Total / surface,
+      co2PerEmployee: co2Total / employees,
+      co2Construction,
+      co2Exploitation,
       breakdown: {
-        energy: Math.round(co2Energy),
-        parking: Math.round(co2ParkingUsage + co2ParkingConstruction),
-        materials: Math.round(co2Materials)
-      }
+        energy: co2Energy,
+        parking: co2Parking,
+        materials: co2Materials,
+      },
     };
   }
 
-  // ----------------------------------------------------------------
-  // Historique mensuel mock  (24 mois : jan 2024 → déc 2025)
-  // ----------------------------------------------------------------
-  getHistory(siteId: number): HistoricalEntry[] {
-    const site = this.getSiteById(siteId);
+  /** Historique : utilise l'API si disponible, sinon génère des données à partir du rapport carbone. */
+  async getHistory(siteId: number): Promise<HistoricalEntry[]> {
+    const token = this.getToken();
+    const site = await this.getSiteById(siteId);
     if (!site) return [];
 
-    const base = this.calculateCarbon(site);
-    const months: HistoricalEntry[] = [];
+    try {
+      const apiHistory = await apiGetSiteHistory(token, siteId);
+      if (apiHistory.length > 0) {
+        const months: HistoricalEntry[] = [];
+        for (const h of apiHistory) {
+          const total = h.totalEmission ?? 0;
+          const energyShare = 0.6;
+          const materialsShare = 0.25;
+          const parkingShare = 0.15;
+          for (let m = 1; m <= 12; m++) {
+            const seasonal = 1 + 0.1 * Math.cos(((m - 1) / 11) * Math.PI);
+            months.push({
+              siteId,
+              month: `${h.year}-${String(m).padStart(2, '0')}`,
+              co2Total: Math.round((total / 12) * seasonal),
+              co2Energy: Math.round((total * energyShare / 12) * seasonal),
+              co2Materials: Math.round((total * materialsShare / 12)),
+              co2Parking: Math.round((total * parkingShare / 12) * seasonal),
+            });
+          }
+        }
+        return months.sort((a, b) => a.month.localeCompare(b.month));
+      }
+    } catch {
+      /* fallback ci-dessous */
+    }
 
-    // Trend légèrement décroissant (+bruit aléatoire déterministe)
+    const cr = await this.getCarbonReport(siteId, site);
+    const months: HistoricalEntry[] = [];
     for (let i = 0; i < 24; i++) {
-      const year  = i < 12 ? 2024 : 2025;
+      const year = i < 12 ? 2024 : 2025;
       const month = (i % 12) + 1;
       const label = `${year}-${String(month).padStart(2, '0')}`;
-
-      // Facteur saisonnier : hiver +15%, été -10%
       const seasonal = 1 + 0.15 * Math.cos(((month - 1) / 11) * Math.PI);
-      // Tendance améliorative : -8% sur 2 ans
-      const trend    = 1 - (i / 23) * 0.08;
-      // Bruit pseudo-aléatoire déterministe basé sur siteId
-      const noise    = 1 + (((siteId * 7 + i * 13) % 20) - 10) / 100;
-
-      const factor   = seasonal * trend * noise;
-      const energy   = Math.round(base.breakdown.energy   * factor);
-      const materials = Math.round(base.breakdown.materials * (0.95 + i * 0.001)); // quasi-constant
-      const parking  = Math.round(base.breakdown.parking  * factor * 0.9);
-
+      const trend = 1 - (i / 23) * 0.08;
+      const noise = 1 + (((siteId * 7 + i * 13) % 20) - 10) / 100;
+      const factor = seasonal * trend * noise;
+      const energy = Math.round((cr.breakdown.energy ?? 0) * factor);
+      const materials = Math.round((cr.breakdown.materials ?? 0) * (0.95 + i * 0.001));
+      const parking = Math.round((cr.breakdown.parking ?? 0) * factor * 0.9);
       months.push({
         siteId,
         month: label,
-        co2Total:    energy + materials + parking,
-        co2Energy:   energy,
+        co2Total: energy + materials + parking,
+        co2Energy: energy,
         co2Materials: materials,
-        co2Parking:  parking
+        co2Parking: parking,
       });
     }
     return months;
   }
 
-  getAllHistory(): HistoricalEntry[] {
-    return this.sites.flatMap(s => this.getHistory(s.id));
-  }
-
-  // ----------------------------------------------------------------
-  // Heatmap : intensité CO₂ par site × catégorie
-  // ----------------------------------------------------------------
-  getHeatmapData(): HeatmapCell[][] {
+  async getHeatmapData(): Promise<HeatmapCell[][]> {
+    const sites = await this.loadSites();
     const categories = [
-      { key: 'co2Total',        label: 'CO₂ Total' },
-      { key: 'co2PerM2',        label: 'CO₂/m²' },
-      { key: 'co2PerEmployee',  label: 'CO₂/employé' },
+      { key: 'co2Total', label: 'CO₂ Total' },
+      { key: 'co2PerM2', label: 'CO₂/m²' },
+      { key: 'co2PerEmployee', label: 'CO₂/employé' },
       { key: 'co2Construction', label: 'Construction' },
       { key: 'co2Exploitation', label: 'Exploitation' },
-      { key: 'energy',          label: 'Énergie' },
-      { key: 'materials',       label: 'Matériaux' },
-      { key: 'parking',         label: 'Parking' }
+      { key: 'energy', label: 'Énergie' },
+      { key: 'materials', label: 'Matériaux' },
+      { key: 'parking', label: 'Parking' },
     ];
 
-    const results = this.sites.map(s => ({ site: s, carbon: this.calculateCarbon(s) }));
+    const results: { site: Site; carbon: CarbonResult }[] = [];
+    for (const site of sites) {
+      const carbon = await this.calculateCarbon(site);
+      results.push({ site, carbon });
+    }
 
     const pickValue = (carbon: CarbonResult, k: string): number => {
       switch (k) {
-        case 'co2Total':        return carbon.co2Total;
-        case 'co2PerM2':        return carbon.co2PerM2;
-        case 'co2PerEmployee':  return carbon.co2PerEmployee;
-        case 'co2Construction': return carbon.co2Construction;
-        case 'co2Exploitation': return carbon.co2Exploitation;
-        case 'energy':          return carbon.breakdown.energy;
-        case 'materials':       return carbon.breakdown.materials;
-        case 'parking':         return carbon.breakdown.parking;
-        default:                return 0;
+        case 'co2Total':
+          return carbon.co2Total;
+        case 'co2PerM2':
+          return carbon.co2PerM2;
+        case 'co2PerEmployee':
+          return carbon.co2PerEmployee;
+        case 'co2Construction':
+          return carbon.co2Construction;
+        case 'co2Exploitation':
+          return carbon.co2Exploitation;
+        case 'energy':
+          return carbon.breakdown.energy;
+        case 'materials':
+          return carbon.breakdown.materials;
+        case 'parking':
+          return carbon.breakdown.parking;
+        default:
+          return 0;
       }
     };
 
-    // Pour chaque catégorie, normaliser les valeurs 0→1
     return results.map(({ site, carbon }) =>
-      categories.map(cat => {
-        const colValues = results.map(r => pickValue(r.carbon, cat.key));
+      categories.map((cat) => {
+        const colValues = results.map((r) => pickValue(r.carbon, cat.key));
         const max = Math.max(...colValues) || 1;
         const value = pickValue(carbon, cat.key);
-
         return {
-          siteId:    site.id,
-          siteName:  site.name,
-          category:  cat.label,
+          siteId: site.id,
+          siteName: site.name,
+          category: cat.label,
           value,
-          intensity: value / max
+          intensity: value / max,
         } as HeatmapCell;
       })
     );
