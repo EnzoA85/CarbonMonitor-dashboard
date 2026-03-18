@@ -46,27 +46,27 @@ export class Register {
     );
   }
 
-  submit() {
+  async submit() {
     if (this.form.invalid) return;
 
     this.loading = true;
-    this.error   = '';
+    this.error = '';
     this.success = '';
 
-    setTimeout(() => {
-      const result = this.auth.register({
-        name:     this.form.value.name,
-        email:    this.form.value.email,
-        password: this.form.value.password
-      });
+    const result = await this.auth.register({
+      name: this.form.value.name,
+      email: this.form.value.email,
+      password: this.form.value.password,
+    });
 
-      this.loading = false;
+    this.loading = false;
 
-      if (result === 'email_taken') {
-        this.error = 'Cette adresse e-mail est déjà utilisée.';
-      } else {
-        this.router.navigate(['/']);
-      }
-    }, 600);
+    if (result === 'email_taken') {
+      this.error = 'Cette adresse e-mail est déjà utilisée.';
+    } else if (typeof result === 'object' && result.error) {
+      this.error = result.error;
+    } else {
+      this.router.navigate(['/']);
+    }
   }
 }

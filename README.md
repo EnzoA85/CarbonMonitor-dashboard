@@ -1,6 +1,20 @@
 # CarbonDashboard
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.2.
+Tableau de bord carbone connecté à l'API CarbonMonitor.
+
+## Configuration API
+
+L'URL de l'API est configurée dans `src/environments/` :
+
+- **Développement** (`environment.ts`) : `http://localhost:8080/api`
+- **Production** (`environment.prod.ts`) : `/api` (proxy ou même domaine)
+
+Pour modifier l'URL en dev, éditez `src/environments/environment.ts`.
+
+## Prérequis
+
+- L'API CarbonMonitor doit être démarrée (ex. `docker-compose up -d` ou `./mvnw spring-boot:run`)
+- CORS autorise `http://localhost:4200` (déjà configuré côté API)
 
 ## Development server
 

@@ -9,6 +9,7 @@ import { Register } from './features/auth/register/register';
 import { authGuard } from './core/guards/auth.guard';
 import { History } from './features/history/history';
 import { Heatmap } from './features/heatmap/heatmap';
+import { Profile } from './features/profile/profile/profile';
 
 export const routes: Routes = [
   {
@@ -36,6 +37,7 @@ export const routes: Routes = [
   },
   {
     path: 'sites/:id/edit',
+    canActivate: [authGuard],
     component: SiteForm
   },
   {
@@ -50,11 +52,18 @@ export const routes: Routes = [
   },
   {
     path: 'history',
+    canActivate: [authGuard],
     component: History
   },
   {
     path: 'heatmap',
+    canActivate: [authGuard],
     component: Heatmap
+  },
+  {
+    path: 'profile',
+    canActivate: [authGuard],
+    component: Profile
   },
   {
     path: '**',

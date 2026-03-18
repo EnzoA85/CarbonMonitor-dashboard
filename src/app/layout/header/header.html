@@ -1,21 +1,16 @@
-<header class="bg-cap-white border-b border-cap-sand px-6 py-3 flex justify-between items-center">
+<header class="header-bar">
+  <h2 class="header-title">CarbonMonitor</h2>
 
-  <div class="text-sm text-cap-muted flex items-center gap-2">
-    <span class="inline-block w-1.5 h-1.5 bg-cap-sage rounded-full"></span>
-    Données en temps réel (mock)
-  </div>
-
-  <div class="flex items-center gap-3">
+  <div class="header-user">
     @if (auth.currentUser()) {
-      <div class="text-right">
-        <div class="text-sm font-semibold text-gray-700">{{ auth.currentUser()!.name }}</div>
-        <div class="text-xs text-gray-400">{{ auth.currentUser()!.email }}</div>
-      </div>
-      <div class="w-9 h-9 bg-green-100 text-green-700 rounded-full flex items-center justify-center font-bold text-sm">
-        {{ auth.currentUser()!.name.charAt(0) }}
-      </div>
-      <button (click)="auth.logout()"
-        class="ml-1 text-gray-400 hover:text-red-500 transition" title="Se déconnecter">
+      <a routerLink="/profile" class="header-profile">
+        <span class="header-avatar">{{ auth.currentUser()!.name.charAt(0) }}</span>
+        <div class="header-user-info">
+          <span class="header-user-name">{{ auth.currentUser()!.name }}</span>
+          <span class="header-user-email">{{ auth.currentUser()!.email }}</span>
+        </div>
+      </a>
+      <button (click)="auth.logout()" class="header-logout" title="Se déconnecter" type="button">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
@@ -23,5 +18,4 @@
       </button>
     }
   </div>
-
 </header>

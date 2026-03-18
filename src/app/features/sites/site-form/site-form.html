@@ -1,9 +1,39 @@
 <div class="max-w-3xl mx-auto">
+  @if (loading) {
+    <div class="flex items-center justify-center py-20 text-gray-400">
+      <span>Chargement…</span>
+    </div>
+  } @else {
+  @if (error) {
+    <div class="mb-4 bg-red-50 text-red-700 p-4 rounded-xl">{{ error }}</div>
+  }
+
   <div class="mb-6">
     <p class="text-[10px] font-bold text-cap-muted uppercase tracking-widest mb-0.5">{{ isEditMode ? 'MODIFIER UN SITE' : 'NOUVEAU SITE' }}</p>
-    <h2 class="text-2xl font-bold text-cap-dark">{{ isEditMode ? 'Modifier le site' : 'Créer un site' }}</h2>
+    <h2 class="text-2xl font-bold text-cap-dark">{{ isEditMode ? 'Modifier le site' : 'Nouveau diagnostic carbone' }}</h2>
     <p class="text-gray-500 mt-1">Renseignez les informations du site pour calculer son empreinte carbone.</p>
   </div>
+
+  <!-- Projection instantanée (comme mobile) -->
+  @if (previewResult(); as pr) {
+    <div class="mb-6 bg-cap-dark rounded-2xl p-6 text-white">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="font-bold text-lg">Projection instantanée</div>
+          <div class="text-sm text-white/80">Le résultat est estimé en temps réel pendant la saisie.</div>
+        </div>
+      </div>
+      <div class="text-3xl font-bold mb-2">{{ formatCO2(pr.co2Total) }}</div>
+      <div class="text-sm text-white/80">
+        Construction {{ formatCO2(pr.co2Construction) }} • Exploitation {{ formatCO2(pr.co2Exploitation) }}
+      </div>
+    </div>
+  }
 
   <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-6">
 
@@ -14,14 +44,24 @@
         Informations générales
       </h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="flex flex-col gap-1">
+        <div class="md:col-span-2 flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600">Nom du site *</label>
           <input type="text" formControlName="name" placeholder="Ex: Siège Social Paris"
             class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
         </div>
+        <div class="md:col-span-2 flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-600">Adresse</label>
+          <input type="text" formControlName="address" placeholder="Ex: 123 rue de la Paix"
+            class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
+        </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-gray-600">Localisation *</label>
-          <input type="text" formControlName="location" placeholder="Ex: Paris, Île-de-France"
+          <label class="text-sm font-medium text-gray-600">Code postal</label>
+          <input type="text" formControlName="postalCode" placeholder="35000"
+            class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-600">Ville</label>
+          <input type="text" formControlName="city" placeholder="Ex: Rennes"
             class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
         </div>
       </div>
@@ -36,22 +76,27 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600">Surface (m²) *</label>
-          <input type="number" formControlName="surface" min="1"
+          <input type="number" formControlName="surface" min="1" placeholder="11771"
+            class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-600">Postes de travail</label>
+          <input type="number" formControlName="workstations" min="0" placeholder="1037"
             class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600">Nombre d'employés *</label>
-          <input type="number" formControlName="employees" min="1"
+          <input type="number" formControlName="employees" min="1" placeholder="1800"
+            class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-600">Places de parking *</label>
+          <input type="number" formControlName="parkingSpaces" min="0" placeholder="200"
             class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600">Consommation énergétique (kWh/an) *</label>
-          <input type="number" formControlName="energyConsumption" min="0"
-            class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-gray-600">Places de parking</label>
-          <input type="number" formControlName="parkingSpaces" min="0"
+          <input type="number" formControlName="energyConsumption" min="0" placeholder="1840000"
             class="border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
         </div>
       </div>
@@ -63,27 +108,22 @@
         <span class="w-7 h-7 bg-cap-mid text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
         Matériaux de construction
       </h3>
-
+      @if (materialsLoadError()) {
+        <div class="mb-4 bg-amber-50 text-amber-800 p-3 rounded-lg text-sm">{{ materialsLoadError() }}</div>
+      }
       <div formArrayName="materials" class="space-y-3">
         @for (mat of materialsArray.controls; track $index) {
           <div [formGroupName]="$index" class="flex gap-3 items-center bg-gray-50 rounded-xl p-3">
             <div class="flex-1">
               <label class="text-xs text-gray-500 mb-1 block">Matériau</label>
-              <select formControlName="name" (change)="onMaterialNameChange($index)"
-                class="w-full border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
-                @for (opt of materialOptions; track opt.label) {
-                  <option [value]="opt.label">{{ opt.label }}</option>
-                }
-              </select>
+              <app-material-search-select
+                formControlName="materialId"
+                [options]="materialOptions()"
+              />
             </div>
             <div class="w-36">
-              <label class="text-xs text-gray-500 mb-1 block">Quantité (tonnes)</label>
-              <input type="number" formControlName="quantity" min="0"
-                class="w-full border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
-            </div>
-            <div class="w-36">
-              <label class="text-xs text-gray-500 mb-1 block">kgCO₂/tonne</label>
-              <input type="number" formControlName="co2PerTon" min="0"
+              <label class="text-xs text-gray-500 mb-1 block">Quantité ({{ getMaterialUnit(mat.get('materialId')?.value) }})</label>
+              <input type="number" formControlName="quantity" min="0" placeholder="500000"
                 class="w-full border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
             </div>
             <button type="button" (click)="removeMaterial($index)"
@@ -91,53 +131,17 @@
           </div>
         }
       </div>
-
       <button type="button" (click)="addMaterial()"
         class="mt-4 flex items-center gap-2 text-cap-green hover:text-cap-dark font-medium text-sm">
         <span class="text-xl leading-none">+</span> Ajouter un matériau
       </button>
     </div>
 
-    <!-- Prévisualisation CO₂ -->
-    <div class="flex gap-3 flex-wrap">
-      <button type="button" (click)="previewCarbon()"
-        class="flex-1 bg-cap-sand hover:bg-cap-cream text-cap-dark font-semibold py-3 px-6 rounded-xl transition">
-        Estimer le CO₂
-      </button>
-      <button type="submit"
-        class="flex-1 bg-cap-dark hover:bg-cap-mid text-white font-semibold py-3 px-6 rounded-xl transition">
-        {{ isEditMode ? 'Enregistrer les modifications' : 'Créer le site' }}
-      </button>
-    </div>
-
-    <!-- Résultat de prévisualisation -->
-    @if (previewResult) {
-      <div class="bg-cap-light border border-cap-sand rounded-2xl p-6">
-        <h4 class="font-semibold text-cap-dark mb-4 text-lg">Estimation de l'empreinte carbone</h4>
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div class="text-center">
-            <div class="text-2xl font-bold text-cap-dark">{{ formatCO2(previewResult.co2Total) }}</div>
-            <div class="text-xs text-gray-500 mt-1">CO₂ total</div>
-          </div>
-          <div class="text-center">
-            <div class="text-2xl font-bold text-blue-700">{{ previewResult.co2PerM2 }} kgCO₂/m²</div>
-            <div class="text-xs text-gray-500 mt-1">Par m²</div>
-          </div>
-          <div class="text-center">
-            <div class="text-2xl font-bold text-purple-700">{{ formatCO2(previewResult.co2PerEmployee) }}</div>
-            <div class="text-xs text-gray-500 mt-1">Par employé</div>
-          </div>
-          <div class="text-center">
-            <div class="text-lg font-semibold text-orange-600">{{ formatCO2(previewResult.co2Construction) }}</div>
-            <div class="text-xs text-gray-500 mt-1">Construction</div>
-          </div>
-          <div class="text-center">
-            <div class="text-lg font-semibold text-red-600">{{ formatCO2(previewResult.co2Exploitation) }}</div>
-            <div class="text-xs text-gray-500 mt-1">Exploitation</div>
-          </div>
-        </div>
-      </div>
-    }
+    <button type="submit" [disabled]="saving"
+      class="w-full bg-cap-dark hover:bg-cap-mid text-white font-semibold py-3 px-6 rounded-xl transition disabled:opacity-50">
+      {{ saving ? 'Enregistrement…' : (isEditMode ? 'Enregistrer les modifications' : 'Calculer et enregistrer') }}
+    </button>
 
   </form>
+  }
 </div>

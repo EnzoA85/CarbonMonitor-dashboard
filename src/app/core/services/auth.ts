@@ -1,5 +1,12 @@
 import { Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import {
+  apiGetCurrentUser,
+  apiLogin,
+  apiRegister,
+  type AuthResponse,
+  type UserResponse,
+} from './api';
 
 export interface AuthUser {
   id: number;
@@ -19,70 +26,67 @@ export interface RegisterPayload {
   password: string;
 }
 
-// Comptes mock — à remplacer par un appel API + vrai JWT
-const MOCK_USERS: (AuthUser & { password: string })[] = [
-  { id: 1, name: 'Administrateur', email: 'admin@company.com', password: 'admin123', role: 'admin' },
-  { id: 2, name: 'Marie Dupont',   email: 'marie@company.com', password: 'marie123', role: 'user' }
-];
-
 const TOKEN_KEY = 'auth_token';
-const USER_KEY  = 'auth_user';
+const USER_KEY = 'auth_user';
+
+function displayNameFromEmail(email: string): string {
+  if (!email?.trim()) return '';
+  const local = email.split('@')[0]?.trim() || '';
+  const first = local.split(/[._-]/)[0] || '';
+  return first ? first.charAt(0).toUpperCase() + first.slice(1).toLowerCase() : '';
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-
-  // Signal réactif pour l'état de connexion (utilisé dans les templates)
   readonly currentUser = signal<AuthUser | null>(this.loadUser());
 
   constructor(private router: Router) {}
 
-  /**
-   * Tente une connexion avec les identifiants fournis.
-   * Retourne true en cas de succès, false sinon.
-   * —— À remplacer : POST /api/auth/login → { access_token, user }
-   */
-  login(payload: LoginPayload): boolean {
-    const match = MOCK_USERS.find(
-      u => u.email === payload.email && u.password === payload.password
-    );
-
-    if (!match) return false;
-
-    const { password: _pw, ...user } = match;
-
-    // Mock JWT — à remplacer par le vrai token renvoyé par le backend
-    const fakeToken = btoa(JSON.stringify({ sub: user.id, email: user.email, role: user.role, exp: Date.now() + 3600_000 }));
-
-    localStorage.setItem(TOKEN_KEY, fakeToken);
+  private storeAuth(res: AuthResponse): void {
+    localStorage.setItem(TOKEN_KEY, res.token);
+    const user: AuthUser = {
+      id: 0,
+      name: displayNameFromEmail(res.email),
+      email: res.email,
+      role: res.role,
+    };
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     this.currentUser.set(user);
-    return true;
   }
 
-  /**
-   * Crée un nouveau compte utilisateur.
-   * Retourne 'email_taken' si l'email est déjà utilisé, sinon connecte directement.
-   * —— À remplacer : POST /api/auth/register
-   */
-  register(payload: RegisterPayload): 'ok' | 'email_taken' {
-    const exists = MOCK_USERS.some(u => u.email === payload.email);
-    if (exists) return 'email_taken';
-
-    const newUser: AuthUser & { password: string } = {
-      id:       MOCK_USERS.length + 1,
-      name:     payload.name,
-      email:    payload.email,
-      password: payload.password,
-      role:     'user'
+  private async fetchAndStoreUser(token: string): Promise<void> {
+    const u = await apiGetCurrentUser(token);
+    const user: AuthUser = {
+      id: u.id,
+      name: displayNameFromEmail(u.email),
+      email: u.email,
+      role: u.role,
     };
-    MOCK_USERS.push(newUser);
-
-    const { password: _pw, ...user } = newUser;
-    const fakeToken = btoa(JSON.stringify({ sub: user.id, email: user.email, role: user.role, exp: Date.now() + 3600_000 }));
-    localStorage.setItem(TOKEN_KEY, fakeToken);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     this.currentUser.set(user);
-    return 'ok';
+  }
+
+  async login(payload: LoginPayload): Promise<{ ok: boolean; error?: string }> {
+    try {
+      const res = await apiLogin({ email: payload.email, password: payload.password });
+      this.storeAuth(res);
+      return { ok: true };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Erreur de connexion';
+      return { ok: false, error: msg.includes('401') ? 'Email ou mot de passe incorrect.' : msg };
+    }
+  }
+
+  async register(payload: RegisterPayload): Promise<'ok' | 'email_taken' | { error: string }> {
+    try {
+      const res = await apiRegister({ email: payload.email, password: payload.password });
+      this.storeAuth(res);
+      return 'ok';
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '';
+      if (msg.toLowerCase().includes('email') || msg.includes('409')) return 'email_taken';
+      return { error: msg };
+    }
   }
 
   logout(): void {
@@ -93,24 +97,21 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) return false;
-
-    // Vérification d'expiration du mock token
-    try {
-      const payload = JSON.parse(atob(token));
-      if (payload.exp && payload.exp < Date.now()) {
-        this.logout();
-        return false;
-      }
-      return true;
-    } catch {
-      return false;
-    }
+    return !!localStorage.getItem(TOKEN_KEY);
   }
 
   getToken(): string | null {
     return localStorage.getItem(TOKEN_KEY);
+  }
+
+  async refreshUser(): Promise<void> {
+    const token = this.getToken();
+    if (!token) return;
+    try {
+      await this.fetchAndStoreUser(token);
+    } catch {
+      this.logout();
+    }
   }
 
   private loadUser(): AuthUser | null {
